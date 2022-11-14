@@ -14,6 +14,7 @@ class RoofDataSet(Dataset):
         """
         Args : 
             file_name (string) :  path to the metadata file
+            transform (Transform) : object with transforms to be applied 
             """
         self.transform = transform 
         img_df=pd.read_hdf(file_name, '/d') #Read metadata 
