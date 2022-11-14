@@ -1,12 +1,12 @@
 import pandas as pd
 import numpy as np
 import torch
-from torch.utils.data import Dataset, DataLoader
-
+from torch.utils.data import Dataset
+from torchvision import transforms
 import cv2
 import matplotlib.pyplot as plt
 from skimage import io
-from torchvision.transforms import ToTensor
+from PIL import Image
 
 
 class RoofDataSet(Dataset):
@@ -37,20 +37,19 @@ class RoofDataSet(Dataset):
 
     def __len__(self):
         """Get dataset size"""
-        return len(self.centroid.shape[0])
+        return self.centroid.shape[0]
     
     def __getitem__(self,idx):
         """Get one item of the dataset"""
         image_filepath = self.image_paths[idx]
-        image = cv2.imread(image_filepath)
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        sample = {'image': image, 'centroids': self.centroid[idx]}
+        image = io.imread(image_filepath)
+        image = Image.fromarray(image) #store as PIL Image 
         
         if self.transform:
-            sample['image'] = self.transform(sample['image'])
-            sample['centroids'] = self.transform(sample['centroids'])
-        
-        return sample
+            image, centroids = self.transform(image, self.centroid[idx])
+            #sample['centroids'] = self.transform(sample['centroids'])
+
+        return image, centroids
 
     def centroid_padding():
         """Padd all labels to obtain the same size """
@@ -68,3 +67,47 @@ class RoofDataSet(Dataset):
         # plt.yticks([])
         plt.pause(0.001)  # pause a bit so that plots are updated
         plt.show() 
+
+class Transforms():
+    def __init__(self, new_size = (256, 256), transform_list = ["resize", "to_tensor"]):
+        """Args: 
+                img_size: indicates the desired size for resizing
+                transform_list: list with desired transforms to be computed. 
+                    NOTE: 'transform_dic' in '__call__' must be updated when new transform functions are added            
+        """
+        self.new_size = new_size 
+        self.transform_list = transform_list
+
+    def to_tensor(self, image, centroids):
+        """Convert image and centroids into tensor"""
+        tensor = transforms.ToTensor()
+        return tensor(image), torch.tensor(centroids)
+
+    def resize(self, image, centroids):
+        """Resize image and centroids into 'new_size'"""
+        image = transforms.functional.resize(image, self.new_size)
+        centroids = centroids * [self.new_size[0] / 500, self.new_size[1] / 500]
+        return image, centroids
+
+    def __call__(self, image, centroids):
+        """Execute all desired transforms"""
+        transform_dic = {"resize": self.resize, "to_tensor": self.to_tensor}
+        for transform in self.transform_list:
+            image, centroids = transform_dic[transform](image, centroids)
+        # image, centroids = self.resize(image, centroids)
+        # image, centroids = self.to_tensor(image, centroids)
+        # image = transforms.functional.normalize(image, [0.5], [0.5]) #This could be contemplated 
+
+        return image, centroids 
+
+def show_centroids(image, centroids, tensor=False):
+    """Show image with centroids"""
+    plt.figure()
+    if tensor:
+        image = image.permute(1, 2, 0)
+    plt.imshow(image)
+    plt.scatter(centroids[:, 1], centroids[:, 0], s=10, marker='.', c='r')
+    plt.pause(0.001)  # pause a bit so that plots are updated
+    plt.show()
+
+
