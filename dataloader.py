@@ -49,6 +49,8 @@ class RoofDataSet(Dataset):
         if self.transform:
             image, centroids = self.transform(image, self.centroid[idx])
             #sample['centroids'] = self.transform(sample['centroids'])
+        else: 
+            centroids = self.centroid[idx]
 
         return image, centroids
 
