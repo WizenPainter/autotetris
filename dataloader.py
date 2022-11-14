@@ -6,6 +6,7 @@ from torch.utils.data import Dataset, DataLoader
 import cv2
 import matplotlib.pyplot as plt
 from skimage import io
+from torchvision.transforms import ToTensor
 
 
 class MyDataset(Dataset):
