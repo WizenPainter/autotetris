@@ -9,7 +9,7 @@ from skimage import io
 from torchvision.transforms import ToTensor
 
 
-class MyDataset(Dataset):
+class RoofDataSet(Dataset):
     def __init__(self, file_name, transform=None):
         """
         Args : 
@@ -44,11 +44,13 @@ class MyDataset(Dataset):
         image_filepath = self.image_paths[idx]
         image = cv2.imread(image_filepath)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        sample = {'image': image, 'centroids': self.centroid[idx]}
         
-        if self.transform is not None:
-            image = self.transform(image=image)["image"]
+        if self.transform:
+            sample['image'] = self.transform(sample['image'])
+            sample['centroids'] = self.transform(sample['centroids'])
         
-        return image, self.centroid[idx]
+        return sample
 
     def centroid_padding():
         """Padd all labels to obtain the same size """
