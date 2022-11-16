@@ -109,8 +109,6 @@ def show_centroids(image, centroids, tensor=False):
     plt.figure()
     if tensor:
         image = image.permute(1, 2, 0)
-        # detach centroids tensor
-        centroids = centroids.detach()
     plt.imshow(image)
     plt.scatter(centroids[:, 1], centroids[:, 0], s=10, marker='.', c='r')
     plt.pause(0.001)  # pause a bit so that plots are updated
