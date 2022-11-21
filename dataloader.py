@@ -57,13 +57,14 @@ class RoofDataSet(Dataset):
         image = Image.fromarray(image) #store as PIL Image 
         
         if self.transform:
+            print(self.id[idx])
             image, centroids = self.transform(image, self.centroid[idx])
             #sample['centroids'] = self.transform(sample['centroids'])
         else: 
             centroids = self.centroid[idx]
 
         #Floats needed in pytorch models
-        return image, centroids
+        return image.float(), centroids.float() # Change is necessary to run Network loss
 
     def centroid_padding():
         """Padd all labels to obtain the same size """
@@ -100,7 +101,11 @@ class Transforms():
     def resize(self, image, centroids):
         """Resize image and centroids into 'new_size'"""
         image = transforms.functional.resize(image, self.new_size)
-        centroids = centroids * [self.new_size[0] / 500, self.new_size[1] / 500]
+        try:
+            centroids = centroids.dot([self.new_size[0] / 500, self.new_size[1] / 500]) # Normal multiplication cannot work, .dot is necessary for this to work
+        except ValueError:
+            print(centroids)
+            centroids = np.transpose(centroids).dot([self.new_size[0] / 500, self.new_size[1] / 500])
         return image, centroids
 
     def __call__(self, image, centroids):
