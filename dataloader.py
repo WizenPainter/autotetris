@@ -16,19 +16,24 @@ class RoofDataSet(Dataset):
             file_name (string) :  path to the metadata file
             transform (Transform) : object with transforms to be applied 
             """
+        print("-"*20, "Initializing dataset", "-"*20)
         self.transform = transform 
         img_df=pd.read_hdf(file_name, '/d') #Read metadata 
+        print("-->", "Metadata read")
         img_df["number_panels"] = img_df["panel_centroids"].apply(lambda x: len(x)) #Compute number of panels per building 
-        
+        print("-->", "Num_panels computed")
         # self.max_num_panels = img_df["number_panels"].max() #store the maximum number of panels 
         self.max_num_panels = max_size
         self.id = img_df["building_id"]  #store necessary data
         # self.polygons = img_df["panel_polygons"] 
 
-        img_df.drop(img_df[img_df.number_panels > self.max_num_panels].index, inplace=True) #drop samples that have too many panels
+        img_df = img_df[img_df.number_panels < self.max_num_panels] #drop samples that have too many panels
+        print("-->", "Samples with many panels dropped")
         img_df["centroids_pad"] = img_df["panel_centroids"].apply(self.__pad_centroids) #apply padding to panels
+        print("-->", "Padding samples")
         self.image_paths = [file_name.split('/meta')[0]+'/'+name+'-b15-otovowms.jpeg' for name in self.id]
         self.centroid = img_df["centroids_pad"].values #Get centroids 
+        print("-->", "Dataset ready")
     
         # self.x_train=torch.tensor(x,dtype=torch.float32)
         # self.y_train=torch.tensor(y,dtype=torch.float32)
@@ -55,7 +60,7 @@ class RoofDataSet(Dataset):
             centroids = self.centroid[idx]
 
         #Floats needed in pytorch models
-        return image.float(), centroids.float()
+        return image, centroids
 
     def centroid_padding():
         """Padd all labels to obtain the same size """
