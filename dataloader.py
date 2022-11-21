@@ -26,7 +26,7 @@ class RoofDataSet(Dataset):
         self.max_num_panels = max_size
         # self.polygons = img_df["panel_polygons"] 
 
-        img_df = img_df[img_df.number_panels < self.max_num_panels] #drop samples that have too many panels
+        img_df = img_df[(img_df.number_panels < self.max_num_panels) & (img_df.number_panels > 0)] #drop samples that have too many panels
         print("-->", "Samples with many panels dropped")
         img_df = img_df.reset_index(drop = True) #reset indexes to avoid empty spaces
         self.id = img_df["building_id"]  #store necessary data
@@ -57,7 +57,7 @@ class RoofDataSet(Dataset):
         image = Image.fromarray(image) #store as PIL Image 
         
         if self.transform:
-            print(self.id[idx])
+            # print(self.id[idx])
             image, centroids = self.transform(image, self.centroid[idx])
             #sample['centroids'] = self.transform(sample['centroids'])
         else: 
