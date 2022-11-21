@@ -24,14 +24,16 @@ class RoofDataSet(Dataset):
         print("-->", "Num_panels computed")
         # self.max_num_panels = img_df["number_panels"].max() #store the maximum number of panels 
         self.max_num_panels = max_size
-        self.id = img_df["building_id"]  #store necessary data
         # self.polygons = img_df["panel_polygons"] 
 
         img_df = img_df[img_df.number_panels < self.max_num_panels] #drop samples that have too many panels
         print("-->", "Samples with many panels dropped")
+        img_df = img_df.reset_index(drop = True) #reset indexes to avoid empty spaces
+        self.id = img_df["building_id"]  #store necessary data
         img_df["centroids_pad"] = img_df["panel_centroids"].apply(self.__pad_centroids) #apply padding to panels
         print("-->", "Padding samples")
-        self.image_paths = [file_name.split('/meta')[0]+'/'+name+'-b15-otovowms.jpeg' for name in self.id]
+        self.image_paths = file_name.split('/meta')[0]
+        # self.image_paths = [file_name.split('/meta')[0]+'/'+name+'-b15-otovowms.jpeg' for name in self.id]
         self.centroid = img_df["centroids_pad"].values #Get centroids 
         print("-->", "Dataset ready")
     
@@ -49,7 +51,8 @@ class RoofDataSet(Dataset):
     
     def __getitem__(self,idx):
         """Get one item of the dataset"""
-        image_filepath = self.image_paths[idx]
+        img_id = self.id[idx]
+        image_filepath = self.image_paths+ "/"+img_id+"-b15-otovowms.jpeg"
         image = io.imread(image_filepath)
         image = Image.fromarray(image) #store as PIL Image 
         
