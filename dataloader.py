@@ -10,7 +10,7 @@ from PIL import Image
 
 
 class RoofDataSet(Dataset):
-    def __init__(self, file_name, transform=None):
+    def __init__(self, file_name, max_size = 100, transform=None):
         """
         Args : 
             file_name (string) :  path to the metadata file
@@ -20,11 +20,13 @@ class RoofDataSet(Dataset):
         img_df=pd.read_hdf(file_name, '/d') #Read metadata 
         img_df["number_panels"] = img_df["panel_centroids"].apply(lambda x: len(x)) #Compute number of panels per building 
         
-        self.max_num_panels = img_df["number_panels"].max() #store the maximum number of panels 
+        # self.max_num_panels = img_df["number_panels"].max() #store the maximum number of panels 
+        self.max_num_panels = max_size
         self.id = img_df["building_id"]  #store necessary data
         # self.polygons = img_df["panel_polygons"] 
 
-        img_df["centroids_pad"] = img_df["panel_centroids"].apply(self.__pad_centroids)
+        img_df.drop(img_df[img_df.number_panels > self.max_num_panels].index, inplace=True) #drop samples that have too many panels
+        img_df["centroids_pad"] = img_df["panel_centroids"].apply(self.__pad_centroids) #apply padding to panels
         self.image_paths = [file_name.split('/meta')[0]+'/'+name+'-b15-otovowms.jpeg' for name in self.id]
         self.centroid = img_df["centroids_pad"].values #Get centroids 
     
@@ -73,7 +75,7 @@ class RoofDataSet(Dataset):
         plt.show() 
 
 class Transforms():
-    def __init__(self, new_size = (256, 256), transform_list = ["resize", "to_tensor"]):
+    def __init__(self, new_size = (224, 224), transform_list = ["resize", "to_tensor"]):
         """Args: 
                 img_size: indicates the desired size for resizing
                 transform_list: list with desired transforms to be computed. 
@@ -105,7 +107,11 @@ class Transforms():
         return image, centroids 
 
 def show_centroids(image, centroids, tensor=False):
-    """Show image with centroids"""
+    """Show image with centroids. 
+        Arguments:
+            -image: PIL Image 
+            -centroids: np.array()
+    """
     plt.figure()
     if tensor:
         image = image.permute(1, 2, 0)
