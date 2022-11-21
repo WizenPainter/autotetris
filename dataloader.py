@@ -40,9 +40,18 @@ class RoofDataSet(Dataset):
         # self.x_train=torch.tensor(x,dtype=torch.float32)
         # self.y_train=torch.tensor(y,dtype=torch.float32)
 
-    def __pad_centroids(self, x):
-        """Pad x with 'fill_values' to standardize length equal to the maximum number of centroids"""
-        fill_values = np.array([0,0])
+    def __pad_centroids(self, x, padding_option = "zeros"):
+        """Pad x with 'fill_values' to standardize length equal to the maximum number of centroids.
+            Arguments: 
+                -x: row of pandas df
+                -padding_otpion: element in ["zeros", "reinforce"]
+        """
+        def func():
+            """WARNING:not implemented yet"""
+            return 
+        options = {"zeros": np.array([0,0]), "reinforce": func}
+        
+        fill_values = options[padding_option]
         return np.apply_along_axis(lambda x: np.pad(np.array(x), (0,self.max_num_panels-len(x)), mode = 'constant', constant_values = fill_values), axis = 0, arr = x)
 
     def __len__(self):
