@@ -111,7 +111,8 @@ class Transforms():
         """Resize image and centroids into 'new_size'"""
         image = transforms.functional.resize(image, self.new_size)
         try:
-            centroids = centroids.dot([self.new_size[0] / 500, self.new_size[1] / 500]) # Normal multiplication cannot work, .dot is necessary for this to work
+            centroids = centroids * (self.new_size[0] / 500, self.new_size[1] / 500)
+            # centroids = centroids.dot([self.new_size[0] / 500, self.new_size[1] / 500]) # Normal multiplication cannot work, .dot is necessary for this to work
         except ValueError:
             print(centroids)
             centroids = np.transpose(centroids).dot([self.new_size[0] / 500, self.new_size[1] / 500])
