@@ -10,7 +10,7 @@ from PIL import Image
 
 
 class RoofDataSet(Dataset):
-    def __init__(self, file_name, max_size = 100, transform=None):
+    def __init__(self, file_name, max_size = 100, transform=None, mode = "wrap"):
         """
         Args : 
             file_name (string) :  path to the metadata file
@@ -30,7 +30,7 @@ class RoofDataSet(Dataset):
         print("-->", "Samples with many panels dropped")
         img_df = img_df.reset_index(drop = True) #reset indexes to avoid empty spaces
         self.id = img_df["building_id"]  #store necessary data
-        img_df["centroids_pad"] = img_df["panel_centroids"].apply(self.__pad_centroids) #apply padding to panels
+        img_df["centroids_pad"] = img_df["panel_centroids"].apply(self.__pad_centroids, args = (mode,)) #apply padding to panels
         print("-->", "Padding samples")
         self.image_paths = file_name.split('/meta')[0]
         # self.image_paths = [file_name.split('/meta')[0]+'/'+name+'-b15-otovowms.jpeg' for name in self.id]
@@ -40,19 +40,16 @@ class RoofDataSet(Dataset):
         # self.x_train=torch.tensor(x,dtype=torch.float32)
         # self.y_train=torch.tensor(y,dtype=torch.float32)
 
-    def __pad_centroids(self, x, padding_option = "zeros"):
+    def __pad_centroids(self, x, mode):
         """Pad x with 'fill_values' to standardize length equal to the maximum number of centroids.
             Arguments: 
                 -x: row of pandas df
-                -padding_otpion: element in ["zeros", "reinforce"]
+                -mode: one option from ["constant", "wrap"]. Wrap reinforces current centroids
         """
-        def func():
-            """WARNING:not implemented yet"""
-            return 
-        options = {"zeros": np.array([0,0]), "reinforce": func}
-        
-        fill_values = options[padding_option]
-        return np.apply_along_axis(lambda x: np.pad(np.array(x), (0,self.max_num_panels-len(x)), mode = 'constant', constant_values = fill_values), axis = 0, arr = x)
+        options = {"constant": lambda x: np.pad(np.array(x), (0,self.max_num_panels-len(x)), mode = 'constant', constant_values = np.array([0,0])),
+                    "wrap": lambda x: np.pad(np.array(x), (0,self.max_num_panels-len(x)), mode = 'wrap')}
+        fill_mode = options[mode]
+        return np.apply_along_axis(fill_mode, axis = 0, arr = x)
 
     def __len__(self):
         """Get dataset size"""
