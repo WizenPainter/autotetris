@@ -36,6 +36,8 @@ class Resnet18(nn.Module):
 
 # Model training
 def model_resnet18(network, criterion, optimizer, num_epochs, train_loader, valid_loader, device = 'cpu'):
+    loss_train_full = []
+    loss_val_full = []
     start_time = time.time()
 
     for epoch in range(1,num_epochs+1):
@@ -75,6 +77,7 @@ def model_resnet18(network, criterion, optimizer, num_epochs, train_loader, vali
             optimizer.step()
 
             loss_train += loss_train_step.item()
+            loss_train_full.append(loss_train)
             running_loss = loss_train/step
 
             print_overwrite(step, len(train_loader), running_loss, 'train')
@@ -98,6 +101,7 @@ def model_resnet18(network, criterion, optimizer, num_epochs, train_loader, vali
 
                 loss_valid += loss_valid_step.item()
                 running_loss = loss_valid/step
+                loss_val_full.append(loss_valid)
 
                 print_overwrite(step, len(valid_loader), running_loss, 'valid')
                 step = step + 1
@@ -111,6 +115,8 @@ def model_resnet18(network, criterion, optimizer, num_epochs, train_loader, vali
 
     print('Training Complete')
     print("Total Elapsed Time : {} s".format(time.time()-start_time))
+    np.savetxt('train_loss', loss_train_full, delimeter=',')
+    np.savetxt('val_loss', loss_train_full, delimeter=',')
     return network
 
 def model_fit(network, criterion, optimizer, num_epochs, train_loader, valid_loader, device = 'cpu'):
