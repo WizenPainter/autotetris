@@ -30,11 +30,11 @@ class PadMSEloss(nn.MSELoss):
 
     def forward(self, input, target, ignore_index = 0):
         drop = target == ignore_index
-        print(input.shape, target.shape)
-        print(drop)
+        # print(input.shape, target.shape)
+        # print(drop)
         input = input[~drop]
         target = target[~drop]
-        print(input, input.shape, target, target.shape)
+        # print(input, input.shape, target, target.shape)
 
         return F.mse_loss(input, target, reduction=self.reduction)
 
@@ -151,7 +151,7 @@ def test_model(model, test_loader, num_tests):
         # Prepare data for plotting
         image = image.squeeze()
         image = image.permute(1, 2, 0)
-
+        
         centroids = centroids.numpy()
         centroids = centroids[0]
 
