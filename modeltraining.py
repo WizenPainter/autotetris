@@ -25,18 +25,34 @@ class Resnet18(nn.Module):
 
 # Loss function
 class PadMSEloss(nn.MSELoss):
+    """MSE loss excluding padding values """
+    def __init__(self, weight=None, size_average=None, reduce=None, reduction: str = 'mean'):
+        super().__init__(size_average, reduce, reduction)
+
+    def forward(self, input, target, ignore_index = 0):
+        drop = (target == ignore_index) #create mask that drops padded values
+        input = input[~drop]
+        target = target[~drop]
+        return F.mse_loss(input, target, reduction=self.reduction) 
+
+class VarMSEloss(nn.MSELoss):
+    """MSE loss taking into account the variance of the (x,y) coordinates.
+            --> VarMSEloss(input, target) = MSE(input, target) + (Var(x_input) - Var(x_target))^2  + (Var(y_input) - Var(y_target))^2"""
     def __init__(self, weight=None, size_average=None, reduce=None, reduction: str = 'mean'):
         super().__init__(size_average, reduce, reduction)
 
     def forward(self, input, target, ignore_index = 0):
         drop = target == ignore_index
-        print(input.shape, target.shape)
-        print(drop)
         input = input[~drop]
         target = target[~drop]
-        print(input, input.shape, target, target.shape)
 
-        return F.mse_loss(input, target, reduction=self.reduction)
+        reshaped_input = torch.transpose(input.view(-1,2), 0, 1)
+        reshaped_target = torch.transpose(target.view(-1,2), 0, 1)
+
+        var_x = torch.var(reshaped_input[0]) - torch.var(reshaped_target[0])
+        var_y = torch.var(reshaped_input[1]) - torch.var(reshaped_target[1])
+        
+        return F.mse_loss(input, target, reduction=self.reduction) + var_x**2 + var_y**2
 
 
 # Model training
