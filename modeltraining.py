@@ -1,24 +1,13 @@
-import os
-import pandas as pd
+
 import numpy as np
 import torch
-import torchvision
 import torch.nn as nn
-import torch.optim as optim
 import torch.nn.functional as F
-import torchvision.transforms.functional as TF
-from torchvision import datasets, models, transforms
-from torch.utils.data import Dataset
-from torchvision.transforms  import ToTensor
-from torch.utils.data import DataLoader
-import albumentations as A
-from albumentations.pytorch import ToTensorV2
-import cv2
+from torchvision import models
+
 import time
 import matplotlib.pyplot as plt
-from skimage import io
 import sys
-from sklearn import metrics
 
 # Model definition
 
@@ -34,6 +23,21 @@ class Resnet18(nn.Module):
         x=self.model(x)
         return x
 
+# Loss function
+class PadMSEloss(nn.MSELoss):
+    def __init__(self, weight=None, size_average=None, reduce=None, reduction: str = 'mean'):
+        super().__init__(size_average, reduce, reduction)
+
+    def forward(self, input, target, ignore_index = 0):
+        drop = target == ignore_index
+        print(input.shape, target.shape)
+        print(drop)
+        input = input[~drop]
+        target = target[~drop]
+        print(input, input.shape, target, target.shape)
+
+        return F.mse_loss(input, target, reduction=self.reduction)
+
 
 # Model training
 def train_model(network, criterion, optimizer, num_epochs, train_loader, valid_loader, device = 'cpu'):
@@ -42,8 +46,8 @@ def train_model(network, criterion, optimizer, num_epochs, train_loader, valid_l
     start_time = time.time()
 
     for epoch in range(1,num_epochs+1):
-        loss_train_batch = []
-        loss_valid_batch = []
+        loss_train = 0
+        loss_valid = 0
         running_loss = 0
         step = 1
 
@@ -81,7 +85,7 @@ def train_model(network, criterion, optimizer, num_epochs, train_loader, valid_l
 
             running_loss = loss_train/step
             # loss_train_batch.append(running_loss)
-            loss_train_full(running_loss)
+            loss_train_full.append(running_loss)
 
             print_overwrite(step, len(train_loader), running_loss, 'train')
             step = step + 1
@@ -120,8 +124,8 @@ def train_model(network, criterion, optimizer, num_epochs, train_loader, valid_l
 
     print('Training Complete')
     print("Total Elapsed Time : {} s".format(time.time()-start_time))
-    np.savetxt('train_loss', loss_train_batch, delimiter=',')
-    np.savetxt('val_loss', loss_valid_batch, delimiter=',')
+    np.savetxt('train_loss', loss_train_full, delimiter=',')
+    np.savetxt('val_loss', loss_val_full, delimiter=',')
     return network
 
 
