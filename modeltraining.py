@@ -18,6 +18,7 @@ import time
 import matplotlib.pyplot as plt
 from skimage import io
 import sys
+from sklearn import metrics
 
 # Model definition
 
@@ -35,14 +36,14 @@ class Resnet18(nn.Module):
 
 
 # Model training
-def model_resnet18(network, criterion, optimizer, num_epochs, train_loader, valid_loader, device = 'cpu'):
+def train_model(network, criterion, optimizer, num_epochs, train_loader, valid_loader, device = 'cpu'):
     loss_train_full = []
     loss_val_full = []
     start_time = time.time()
 
     for epoch in range(1,num_epochs+1):
-        loss_train = 0
-        loss_valid = 0
+        loss_train_batch = []
+        loss_valid_batch = []
         running_loss = 0
         step = 1
 
@@ -57,7 +58,7 @@ def model_resnet18(network, criterion, optimizer, num_epochs, train_loader, vali
             #images, centroids = next(iterator_train)
             images = images.to(device)
             centroids = centroids.view(centroids.size(0),-1).to(device)
-            print(centroids.shape)
+            # print(centroids.shape)
 
             #print(images.shape)
             #print(image)
@@ -77,8 +78,10 @@ def model_resnet18(network, criterion, optimizer, num_epochs, train_loader, vali
             optimizer.step()
 
             loss_train += loss_train_step.item()
-            loss_train_full.append(loss_train)
+
             running_loss = loss_train/step
+            # loss_train_batch.append(running_loss)
+            loss_train_full(running_loss)
 
             print_overwrite(step, len(train_loader), running_loss, 'train')
             step = step + 1
@@ -101,13 +104,15 @@ def model_resnet18(network, criterion, optimizer, num_epochs, train_loader, vali
 
                 loss_valid += loss_valid_step.item()
                 running_loss = loss_valid/step
-                loss_val_full.append(loss_valid)
+                loss_val_full.append(running_loss)
 
                 print_overwrite(step, len(valid_loader), running_loss, 'valid')
                 step = step + 1
 
         loss_train /= len(train_loader)
         loss_valid /= len(valid_loader)
+        # loss_train_full.append(loss_train)
+        # loss_val_full.append(loss_valid)
 
         print('\n--------------------------------------------------')
         print('Epoch: {}  Train Loss: {:.4f}  Valid Loss: {:.4f}'.format(epoch, loss_train, loss_valid))
@@ -115,87 +120,10 @@ def model_resnet18(network, criterion, optimizer, num_epochs, train_loader, vali
 
     print('Training Complete')
     print("Total Elapsed Time : {} s".format(time.time()-start_time))
-    np.savetxt('train_loss', loss_train_full, delimeter=',')
-    np.savetxt('val_loss', loss_train_full, delimeter=',')
+    np.savetxt('train_loss', loss_train_batch, delimeter=',')
+    np.savetxt('val_loss', loss_valid_batch, delimeter=',')
     return network
 
-def model_fit(network, criterion, optimizer, num_epochs, train_loader, valid_loader, device = 'cpu'):
-    start_time = time.time()
-
-    for epoch in range(1,num_epochs+1):
-        loss_train = 0
-        loss_valid = 0
-        running_loss = 0
-        step = 1
-
-        network.train()
-
-        # initialize iterator
-        #iterator_train = iter(train_loader)
-        #iterator_valid = iter(valid_loader)
-
-        for images, centroids in train_loader:
-
-            #images, centroids = next(iterator_train)
-            images = images.to(device)
-            centroids = centroids.view(centroids.size(0),-1).to(device)
-
-            print(images.shape)
-            print(centroids.shape)
-            #print(image)
-
-            predictions = network(images)
-
-            # clear all the gradients before calculating them
-            optimizer.zero_grad()
-
-            # find the loss for the current step
-            loss_train_step = criterion(predictions, centroids)
-
-            # calculate the gradients
-            loss_train_step.backward()
-
-            # update the parameters
-            optimizer.step()
-
-            loss_train += loss_train_step.item()
-            running_loss = loss_train/step
-
-            print_overwrite(step, len(train_loader), running_loss, 'train')
-            step = step + 1
-
-        step = 1
-        network.eval()
-        with torch.no_grad():
-
-            for images, centroids in valid_loader:
-
-                #images, centroids = next(iterator_valid)
-
-                images = images.to(device)
-                centroids = centroids.view(centroids.size(0),-1).to(device)
-
-                predictions = network(images)
-
-                # find the loss for the current step
-                loss_valid_step = criterion(predictions, centroids)
-
-                loss_valid += loss_valid_step.item()
-                running_loss = loss_valid/step
-
-                print_overwrite(step, len(valid_loader), running_loss, 'valid')
-                step = step + 1
-
-        loss_train /= len(train_loader)
-        loss_valid /= len(valid_loader)
-
-        print('\n--------------------------------------------------')
-        print('Epoch: {}  Train Loss: {:.4f}  Valid Loss: {:.4f}'.format(epoch, loss_train, loss_valid))
-        print('--------------------------------------------------')
-
-    print('Training Complete')
-    print("Total Elapsed Time : {} s".format(time.time()-start_time))
-    return network
 
 # Help functions
 def print_overwrite(step, total_step, loss, operation):
@@ -206,6 +134,7 @@ def print_overwrite(step, total_step, loss, operation):
         sys.stdout.write("Valid Steps: %d/%d  Loss: %.4f " % (step, total_step, loss))
 
     sys.stdout.flush()
+
 
 def test_model(model, test_loader, num_tests):
     predictions = []
