@@ -120,8 +120,8 @@ def train_model(network, criterion, optimizer, num_epochs, train_loader, valid_l
 
     print('Training Complete')
     print("Total Elapsed Time : {} s".format(time.time()-start_time))
-    np.savetxt('train_loss', loss_train_batch, delimeter=',')
-    np.savetxt('val_loss', loss_valid_batch, delimeter=',')
+    np.savetxt('train_loss', loss_train_batch, delimiter=',')
+    np.savetxt('val_loss', loss_valid_batch, delimiter=',')
     return network
 
 
