@@ -22,6 +22,8 @@ from lib.dataloader import RoofDataSet
 from dataloader import Transforms
 from modeltraining import Resnet18, model_resnet18
 #%%
+# Github_Project\Dataset\data_2022-11-01\meta_data.hdf
+# C:\Users\guzma\OneDrive\Documents\TEC\DTU\02456\Project\Github_Project\Dataset\data_2022-11-01\meta_data.hdf
 path = '/Users/pauli/Documents/Studium/Master/3. Semester Auslandssemester DTU/Deep Learning/Final Project/Otovo/data_full/meta_data.hdf'
 input_path = path
 print(path)
@@ -70,7 +72,7 @@ network.to(device)
 
 # Adjust network parameter
 criterion = nn.MSELoss()
-optimizer = optim.Adam(network.parameters(), lr=0.0001)
+optimizer = optim.Adam(network.parameters(), lr=0.001)
 
 loss_min = np.inf
 num_epochs = 2
@@ -78,7 +80,7 @@ num_epochs = 2
 # Train model
 model = model_resnet18(network, criterion, optimizer, num_epochs, train_loader, valid_loader, device)
 
-torch.save(model, 'resnet_first_22_11_22')
+torch.save(model, 'resnet_first_28_11_22_j')
 
 
 
