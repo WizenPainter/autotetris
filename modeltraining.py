@@ -43,16 +43,8 @@ class VarMSEloss(nn.MSELoss):
 
     def forward(self, input, target, ignore_index = 0):
         drop = target == ignore_index
-<<<<<<< HEAD
-        # print(input.shape, target.shape)
-        # print(drop)
         input = input[~drop]
         target = target[~drop]
-        # print(input, input.shape, target, target.shape)
-=======
-        input = input[~drop]
-        target = target[~drop]
->>>>>>> 41920f5f350bf8ea8f05cd96a3e517220f56654b
 
         reshaped_input = torch.transpose(input.view(-1,2), 0, 1)
         reshaped_target = torch.transpose(target.view(-1,2), 0, 1)
@@ -60,7 +52,28 @@ class VarMSEloss(nn.MSELoss):
         var_x = torch.var(reshaped_input[0]) - torch.var(reshaped_target[0])
         var_y = torch.var(reshaped_input[1]) - torch.var(reshaped_target[1])
         
-        return F.mse_loss(input, target, reduction=self.reduction) + var_x**2 + var_y**2
+        return F.mse_loss(input, target, reduction=self.reduction) + var_x + var_y
+
+
+class VarDiffloss(nn.MSELoss):
+    """MSE loss taking into account the variance of the (x,y) coordinates.
+            --> VarMSEloss(input, target) = MSE(input, target) + (Var(x_input) - Var(x_target))^2  + (Var(y_input) - Var(y_target))^2"""
+
+    def __init__(self, weight=None, size_average=None, reduce=None, reduction: str = 'mean'):
+        super().__init__(size_average, reduce, reduction)
+
+    def forward(self, input, target, ignore_index=0):
+        drop = target == ignore_index
+        input = input[~drop]
+        target = target[~drop]
+
+        reshaped_input = torch.transpose(input.view(-1, 2), 0, 1)
+        reshaped_target = torch.transpose(target.view(-1, 2), 0, 1)
+
+        var_x = torch.var(reshaped_input[0] - reshaped_target[0])
+        var_y = torch.var(reshaped_input[1] - reshaped_target[1])
+
+        return F.mse_loss(input, target, reduction=self.reduction) + var_x + var_y
 
 
 # Model training
@@ -175,7 +188,7 @@ def test_model(model, test_loader, num_tests):
         # Prepare data for plotting
         image = image.squeeze()
         image = image.permute(1, 2, 0)
-        
+
         centroids = centroids.numpy()
         centroids = centroids[0]
 
