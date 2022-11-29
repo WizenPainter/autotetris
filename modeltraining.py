@@ -49,8 +49,8 @@ class VarMSEloss(nn.MSELoss):
         reshaped_input = torch.transpose(input.view(-1,2), 0, 1)
         reshaped_target = torch.transpose(target.view(-1,2), 0, 1)
 
-        var_x = torch.var(reshaped_input[0]) - torch.var(reshaped_target[0])
-        var_y = torch.var(reshaped_input[1]) - torch.var(reshaped_target[1])
+        var_x = torch.abs(torch.var(reshaped_input[0]) - torch.var(reshaped_target[0]))
+        var_y = torch.abs(torch.var(reshaped_input[1]) - torch.var(reshaped_target[1]))
         
         return F.mse_loss(input, target, reduction=self.reduction) + var_x + var_y
 
