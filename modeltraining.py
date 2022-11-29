@@ -122,11 +122,10 @@ def train_model(network, criterion, optimizer, num_epochs, train_loader, valid_l
 
             running_loss = loss_train/step
             # loss_train_batch.append(running_loss)
-            loss_train_full.append(running_loss)
 
             print_overwrite(step, len(train_loader), running_loss, 'train')
             step = step + 1
-
+        loss_train_full.append(running_loss)
         step = 1
         network.eval()
         with torch.no_grad():
@@ -145,10 +144,11 @@ def train_model(network, criterion, optimizer, num_epochs, train_loader, valid_l
 
                 loss_valid += loss_valid_step.item()
                 running_loss = loss_valid/step
-                loss_val_full.append(running_loss)
+                # loss_valid_batch.append(running_loss)
 
                 print_overwrite(step, len(valid_loader), running_loss, 'valid')
                 step = step + 1
+            loss_val_full.append(running_loss)
 
         loss_train /= len(train_loader)
         loss_valid /= len(valid_loader)
