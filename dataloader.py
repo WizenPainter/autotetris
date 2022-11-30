@@ -15,6 +15,7 @@ class RoofDataSet(Dataset):
         Args : 
             file_name (string) :  path to the metadata file
             transform (Transform) : object with transforms to be applied 
+            mode: one option from ["constant", "wrap"]. Wrap reinforces current centroids
             """
         print("-"*20, "Initializing dataset", "-"*20)
         self.transform = transform 
@@ -44,7 +45,6 @@ class RoofDataSet(Dataset):
         """Pad x with 'fill_values' to standardize length equal to the maximum number of centroids.
             Arguments: 
                 -x: row of pandas df
-                -mode: one option from ["constant", "wrap"]. Wrap reinforces current centroids
         """
         options = {"constant": lambda x: np.pad(np.array(x), (0,self.max_num_panels-len(x)), mode = 'constant', constant_values = np.array([0,0])),
                     "wrap": lambda x: np.pad(np.array(x), (0,self.max_num_panels-len(x)), mode = 'wrap')}
