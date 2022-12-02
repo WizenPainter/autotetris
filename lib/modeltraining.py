@@ -23,6 +23,35 @@ class Resnet18(nn.Module):
         x=self.model(x)
         return x
 
+class GAP_Model(nn.Module): 
+    def __init__(self,num_classes=200):
+        super().__init__()
+        self.model_name='resnet18'
+        self.model=models.resnet18()
+        self.conv1=nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3, bias=False)
+        self.gap = GAP()
+        self.fc=nn.Linear(self.model.fc.in_features, num_classes)
+
+    def forward(self, x):
+        x = self.model(x)
+        x = self.conv1(x)
+        x = self.gap(x)
+        x = self.fc(x)
+        return x
+
+import torch
+
+# define the GAP activation layer
+class GAP(torch.nn.Module):
+    def __init__(self):
+        super(GAP, self).__init__()
+
+    def forward(self, x):
+        # compute the average of the values in the input tensor
+        out = torch.mean(x, dim=(2, 3))
+        return out
+
+
 # Loss function
 class PadMSEloss(nn.MSELoss):
     """MSE loss excluding padding values """
