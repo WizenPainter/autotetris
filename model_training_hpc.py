@@ -32,8 +32,7 @@ path = 'C:/Users/guzma/OneDrive/Documents/TEC/DTU/02456/Project/Github_Project/D
 input_path = path
 
 # %%
-max_size = 30
-dataset = RoofDataSet(path, transform=Transforms(new_size=(224,224)), mode = "constant", max_size=max_size)
+dataset = RoofDataSet(path, transform=Transforms(new_size=(224,224)), mode = "constant")
 imp_path = dataset.image_paths +  "/"+dataset.id[0]+"-b15-otovowms.jpeg"
 image = cv2.imread(imp_path)
 image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
@@ -73,7 +72,7 @@ image, centroid = next(iter(train_loader))
 # print(image.shape, centroid.shape, centroid)
 #%%
 # network = Resnet18()
-network = Resnet50(num_classes=max_size*2) # Because our padded values are added on both sides of the image.
+network = Resnet50(dataset.max_num_panels*2) # Because our padded values are added on both sides of the image.
 network.to(device)
 # print(network)
 
@@ -84,7 +83,7 @@ optimizer = optim.Adam(network.parameters(), lr=0.0001)
 scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
 
 loss_min = 0.0001
-num_epochs = 10
+num_epochs = 5
 
 # Train model
 model = train_model(network, criterion, optimizer, num_epochs, train_loader, valid_loader, device)
