@@ -16,7 +16,7 @@ import sys
 #from autotetris.dataloader import RoofDataSet
 from lib.dataloader import RoofDataSet
 from lib.dataloader import Transforms
-from lib.modeltraining import Resnet18, model_resnet18
+from lib.modeltraining import Resnet18, Resnet50, PadMSEloss, VarMSEloss, VarDiffloss, train_model, test_model
 #%%
 # Github_Project\Dataset\data_2022-11-01\meta_data.hdf
 # C:\Users\guzma\OneDrive\Documents\TEC\DTU\02456\Project\Github_Project\Dataset\data_2022-11-01\meta_data.hdf
@@ -29,7 +29,8 @@ print(path)
 # test = df.building_id.str.split('-b15',n = 1, expand = True)[0].tolist()
 #centroid = np.array(df.panel_centroids.to_list())
 #%%
-dataset = RoofDataSet(path, transform=Transforms(new_size=(256,256)), mode = "constant")
+max_size = 60
+dataset = RoofDataSet(path, transform=Transforms(new_size=(256,256)), mode = "constant", max_size=max_size)
 imp_path = dataset.image_paths +  "/"+dataset.id[0]+"-b15-otovowms.jpeg"
 image = cv2.imread(imp_path)
 image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
@@ -47,37 +48,49 @@ len_train_set = len(train_dataset) - len_valid_set
 
 train_dataset, valid_dataset = torch.utils.data.random_split(train_dataset, [len_train_set, len_valid_set])
 
+
+# %%
 print("The length of Train set is {}".format(len_train_set))
 print("The length of Valid set is {}".format(len_valid_set))
 print("The length of Test set is {}".format(len_test_set))
 
 
 # shuffle and batch the datasets
-train_loader = DataLoader(train_dataset, batch_size=68, shuffle=True)
-valid_loader = DataLoader(valid_dataset, batch_size=68, shuffle=True)
-test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False)
-#%%
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+train_loader = DataLoader(train_dataset, batch_size=4, shuffle=True)
+valid_loader = DataLoader(valid_dataset, batch_size=4, shuffle=True)
+test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False, collate_fn=lambda x: tuple(x_.to("cpu") for x_ in default_collate(x)))
+# test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False)
+
+# %% [markdown]
+# ## Model Training
+
+# %%
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(device)
 #%%
 image, centroid = next(iter(train_loader))
-print(image.shape, centroid.shape, centroid)
+# print(image.shape, centroid.shape, centroid)
 #%%
-network = Resnet18()
+network = Resnet50(num_classes=max_size*2)
+# network = ResNet()
 network.to(device)
 # print(network)
 
 # Adjust network parameter
-criterion = nn.MSELoss()
-optimizer = optim.Adam(network.parameters(), lr=0.001)
+criterion = VarDiffloss()
+# TODO try SGD 
+# optimizer = optim.SGD(network.parameters(), lr=0.01)
+optimizer = optim.Adam(network.parameters(), lr=0.0001)
+scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
 
-loss_min = np.inf
-num_epochs = 50
+loss_min = 0.001
+num_epochs = 10
 
 # Train model
-model = model_resnet18(network, criterion, optimizer, num_epochs, train_loader, valid_loader, device)
+model = train_model(network, criterion, optimizer, num_epochs, train_loader, valid_loader, device)
 
-torch.save(model, 'resnet_first_28_11_22_j')
+torch.save(model, 'resnet_diff_sgd_10_02_12_22_j.pt')
 
 
 
