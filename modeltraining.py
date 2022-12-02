@@ -22,6 +22,18 @@ class Resnet18(nn.Module):
     def forward(self, x):
         x=self.model(x)
         return x
+class Resnet50(nn.Module):
+    def __init__(self,num_classes=200):
+        super().__init__()
+        self.model_name='resnet50'
+        self.model=models.resnet50()
+        self.model.conv1=nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3, bias=False)
+        self.model.bn1=nn.BatchNorm2d(64)
+        self.model.fc=nn.Linear(self.model.fc.in_features, num_classes)
+
+    def forward(self, x):
+        x=self.model(x)
+        return x
 
 # Loss function
 class PadMSEloss(nn.MSELoss):
@@ -63,7 +75,14 @@ class VarDiffloss(nn.MSELoss):
         super().__init__(size_average, reduce, reduction)
 
     def forward(self, input, target, ignore_index=0):
-        drop = target == ignore_index
+        """
+            Input: The predictions made by the model.
+            Target: The ground truth.
+            Ignore_index: The value that is used to pad the input and target tensors.
+        """
+        drop = (target == ignore_index)
+        # input = input.type(torch.float)
+        # print(drop.shape)
         input = input[~drop]
         target = target[~drop]
 
@@ -97,6 +116,7 @@ def train_model(network, criterion, optimizer, num_epochs, train_loader, valid_l
         for images, centroids in train_loader:
 
             #images, centroids = next(iterator_train)
+            # print(device)
             images = images.to(device)
             centroids = centroids.view(centroids.size(0),-1).to(device)
             # print(centroids.shape)
