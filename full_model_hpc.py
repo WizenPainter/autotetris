@@ -11,23 +11,14 @@ import cv2
 #%%
 # Data Loader
 import sys
-# path = os.getcwd()
-#sys.path.insert(0, '/Users/pauli/Documents/Studium/Master/3. Semester Auslandssemester DTU/Deep Learning/Final Project/Otovo/')
-#from autotetris.dataloader import RoofDataSet
 from lib.dataloader import RoofDataSet
 from lib.dataloader import Transforms
 from lib.modeltraining import Resnet18, Resnet50, PadMSEloss, VarMSEloss, VarDiffloss, train_model, test_model
 #%%
-# Github_Project\Dataset\data_2022-11-01\meta_data.hdf
-# C:\Users\guzma\OneDrive\Documents\TEC\DTU\02456\Project\Github_Project\Dataset\data_2022-11-01\meta_data.hdf
 # path = '/Users/pauli/Documents/Studium/Master/3. Semester Auslandssemester DTU/Deep Learning/Final Project/Otovo/data_full/meta_data.hdf'
-path = './data_updated/meta_data.hdf'
+path = 'C:/Users/guzma/OneDrive/Documents/TEC/DTU/02456/Project/Github_Project/Dataset/data_2022-11-01/meta_data.hdf'
 input_path = path
 print(path)
-#df = pd.read_hdf(path, '/d')
-# centroid=df.iloc[:,6].values
-# test = df.building_id.str.split('-b15',n = 1, expand = True)[0].tolist()
-#centroid = np.array(df.panel_centroids.to_list())
 #%%
 max_size = 60
 dataset = RoofDataSet(path, transform=Transforms(new_size=(256,256)), mode = "constant", max_size=max_size)
@@ -62,9 +53,6 @@ valid_loader = DataLoader(valid_dataset, batch_size=4, shuffle=True)
 test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False, collate_fn=lambda x: tuple(x_.to("cpu") for x_ in default_collate(x)))
 # test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False)
 
-# %% [markdown]
-# ## Model Training
-
 # %%
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(device)
@@ -79,8 +67,8 @@ network.to(device)
 
 # Adjust network parameter
 criterion = VarDiffloss()
-# TODO try SGD 
-# optimizer = optim.SGD(network.parameters(), lr=0.01)
+# SGD diverges on our model
+# optimizer = optim.SGD(network.parameters(), lr=0.0001)
 optimizer = optim.Adam(network.parameters(), lr=0.0001)
 scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
 
