@@ -50,8 +50,6 @@ class ResidualBlock(nn.Module):
         self.conv2 = nn.Conv2d(channels, channels, kernel_size=3, stride=1, padding=1)
         self.bn2 = nn.BatchNorm2d(channels)
         self.stride = stride
-        self.resconv = nn.Conv2d(in_size, out_size, kernel_size=1, stride=self.stride)
-        self.bnres = nn.BatchNorm2d(out_size)
         
     def forward(self, x):
         residual = x

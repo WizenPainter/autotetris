@@ -1,24 +1,13 @@
-import os
-import pandas as pd
+
 import numpy as np
 import torch
-import torchvision
 import torch.nn as nn
-import torch.optim as optim
 import torch.nn.functional as F
-import torchvision.transforms.functional as TF
-from torchvision import datasets, models, transforms
-from torch.utils.data import Dataset
-from torchvision.transforms  import ToTensor
-from torch.utils.data import DataLoader
-import albumentations as A
-from albumentations.pytorch import ToTensorV2
-import cv2
+from torchvision import models
+
 import time
 import matplotlib.pyplot as plt
-from skimage import io
 import sys
-from sklearn import metrics
 
 # Model definition
 
@@ -33,13 +22,84 @@ class Resnet18(nn.Module):
     def forward(self, x):
         x=self.model(x)
         return x
+class Resnet50(nn.Module):
+    def __init__(self,num_classes=200):
+        super().__init__()
+        self.model_name='resnet50'
+        self.model=models.resnet50()
+        self.model.conv1=nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3, bias=False)
+        self.model.bn1=nn.BatchNorm2d(64)
+        self.model.fc=nn.Linear(self.model.fc.in_features, num_classes)
+
+    def forward(self, x):
+        x=self.model(x)
+        return x
+
+# Loss function
+class PadMSEloss(nn.MSELoss):
+    """MSE loss excluding padding values """
+    def __init__(self, weight=None, size_average=None, reduce=None, reduction: str = 'mean'):
+        super().__init__(size_average, reduce, reduction)
+
+    def forward(self, input, target, ignore_index = 0):
+        drop = (target == ignore_index) #create mask that drops padded values
+        input = input[~drop]
+        target = target[~drop]
+        return F.mse_loss(input, target, reduction=self.reduction) 
+
+class VarMSEloss(nn.MSELoss):
+    """MSE loss taking into account the variance of the (x,y) coordinates.
+            --> VarMSEloss(input, target) = MSE(input, target) + (Var(x_input) - Var(x_target))^2  + (Var(y_input) - Var(y_target))^2"""
+    def __init__(self, weight=None, size_average=None, reduce=None, reduction: str = 'mean'):
+        super().__init__(size_average, reduce, reduction)
+
+    def forward(self, input, target, ignore_index = 0):
+        drop = target == ignore_index
+        input = input[~drop]
+        target = target[~drop]
+
+        reshaped_input = torch.transpose(input.view(-1,2), 0, 1)
+        reshaped_target = torch.transpose(target.view(-1,2), 0, 1)
+
+        var_x = torch.abs(torch.var(reshaped_input[0]) - torch.var(reshaped_target[0]))
+        var_y = torch.abs(torch.var(reshaped_input[1]) - torch.var(reshaped_target[1]))
+        
+        return F.mse_loss(input, target, reduction=self.reduction) + var_x + var_y
+
+
+class VarDiffloss(nn.MSELoss):
+    """MSE loss taking into account the variance of the (x,y) coordinates.
+            --> VarMSEloss(input, target) = MSE(input, target) + (Var(x_input) - Var(x_target))^2  + (Var(y_input) - Var(y_target))^2"""
+
+    def __init__(self, weight=None, size_average=None, reduce=None, reduction: str = 'mean'):
+        super().__init__(size_average, reduce, reduction)
+
+    def forward(self, input, target, ignore_index=0):
+        """
+            Input: The predictions made by the model.
+            Target: The ground truth.
+            Ignore_index: The value that is used to pad the input and target tensors.
+        """
+        drop = (target == ignore_index)
+        # input = input.type(torch.float)
+        # print(drop.shape)
+        input = input[~drop]
+        target = target[~drop]
+
+        reshaped_input = torch.transpose(input.view(-1, 2), 0, 1)
+        reshaped_target = torch.transpose(target.view(-1, 2), 0, 1)
+
+        var_x = torch.var(reshaped_input[0] - reshaped_target[0])
+        var_y = torch.var(reshaped_input[1] - reshaped_target[1])
+
+        return F.mse_loss(input, target, reduction=self.reduction) + var_x + var_y
 
 
 # Model training
 def train_model(network, criterion, optimizer, num_epochs, train_loader, valid_loader, device = 'cpu'):
+    loss_train_full = []
+    loss_val_full = []
     start_time = time.time()
-    loss_train_batch = []
-    loss_valid_batch = []
 
     for epoch in range(1,num_epochs+1):
         loss_train = 0
@@ -56,6 +116,7 @@ def train_model(network, criterion, optimizer, num_epochs, train_loader, valid_l
         for images, centroids in train_loader:
 
             #images, centroids = next(iterator_train)
+            # print(device)
             images = images.to(device)
             centroids = centroids.view(centroids.size(0),-1).to(device)
             # print(centroids.shape)
@@ -80,12 +141,11 @@ def train_model(network, criterion, optimizer, num_epochs, train_loader, valid_l
             loss_train += loss_train_step.item()
 
             running_loss = loss_train/step
-            loss_train_batch.append(running_loss)
-            # loss_train_full(running_loss)
+            # loss_train_batch.append(running_loss)
 
             print_overwrite(step, len(train_loader), running_loss, 'train')
             step = step + 1
-
+        loss_train_full.append(running_loss)
         step = 1
         network.eval()
         with torch.no_grad():
@@ -104,10 +164,11 @@ def train_model(network, criterion, optimizer, num_epochs, train_loader, valid_l
 
                 loss_valid += loss_valid_step.item()
                 running_loss = loss_valid/step
-                loss_valid_batch.append(running_loss)
+                # loss_valid_batch.append(running_loss)
 
                 print_overwrite(step, len(valid_loader), running_loss, 'valid')
                 step = step + 1
+            loss_val_full.append(running_loss)
 
         loss_train /= len(train_loader)
         loss_valid /= len(valid_loader)
@@ -120,8 +181,8 @@ def train_model(network, criterion, optimizer, num_epochs, train_loader, valid_l
 
     print('Training Complete')
     print("Total Elapsed Time : {} s".format(time.time()-start_time))
-    np.savetxt('train_loss', loss_train_batch, delimiter=',')
-    np.savetxt('val_loss', loss_valid_batch, delimiter=',')
+    np.savetxt('train_loss', loss_train_full, delimiter=',')
+    np.savetxt('val_loss', loss_val_full, delimiter=',')
     return network
 
 
