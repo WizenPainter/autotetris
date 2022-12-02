@@ -7,27 +7,32 @@ import cv2
 import matplotlib.pyplot as plt
 from skimage import io
 from PIL import Image
+from math import floor
 
 
 class RoofDataSet(Dataset):
-    def __init__(self, file_name, max_size = 100, transform=None, mode = "wrap"):
+    def __init__(self, file_name, transform=None, mode = "wrap"):
         """
         Args : 
             file_name (string) :  path to the metadata file
             transform (Transform) : object with transforms to be applied 
+            mode: one option from ["constant", "wrap"]. Wrap reinforces current centroids
             """
         print("-"*20, "Initializing dataset", "-"*20)
         self.transform = transform 
         img_df=pd.read_hdf(file_name, '/d') #Read metadata 
         print("-->", "Metadata read")
+
         img_df["number_panels"] = img_df["panel_centroids"].apply(lambda x: len(x)) #Compute number of panels per building 
+        percentiles = img_df["number_panels"].describe(percentiles = [0.1, 0.25, 0.75, 0.9]).to_dict() #get dictionary with percentile values
+        self.min_num_panels = floor(percentiles['10%'])
+        self.max_num_panels = floor(percentiles['90%'])
         print("-->", "Num_panels computed")
-        # self.max_num_panels = img_df["number_panels"].max() #store the maximum number of panels 
-        self.max_num_panels = max_size
         # self.polygons = img_df["panel_polygons"] 
 
-        img_df = img_df[(img_df.number_panels < self.max_num_panels) & (img_df.number_panels > 0)] #drop samples that have too many panels
+        img_df = img_df[(img_df.number_panels < self.max_num_panels) & (img_df.number_panels > self.min_num_panels)] #drop samples that have too many or too few panels
         print("-->", "Samples with many panels dropped")
+
         img_df = img_df.reset_index(drop = True) #reset indexes to avoid empty spaces
         self.id = img_df["building_id"]  #store necessary data
         img_df["centroids_pad"] = img_df["panel_centroids"].apply(self.__pad_centroids, args = (mode,)) #apply padding to panels
@@ -44,7 +49,6 @@ class RoofDataSet(Dataset):
         """Pad x with 'fill_values' to standardize length equal to the maximum number of centroids.
             Arguments: 
                 -x: row of pandas df
-                -mode: one option from ["constant", "wrap"]. Wrap reinforces current centroids
         """
         options = {"constant": lambda x: np.pad(np.array(x), (0,self.max_num_panels-len(x)), mode = 'constant', constant_values = np.array([0,0])),
                     "wrap": lambda x: np.pad(np.array(x), (0,self.max_num_panels-len(x)), mode = 'wrap')}

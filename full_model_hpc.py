@@ -18,14 +18,11 @@ from lib.dataloader import RoofDataSet
 from lib.dataloader import Transforms
 from lib.modeltraining import Resnet18, model_resnet18
 #%%
-<<<<<<< HEAD
 # Github_Project\Dataset\data_2022-11-01\meta_data.hdf
 # C:\Users\guzma\OneDrive\Documents\TEC\DTU\02456\Project\Github_Project\Dataset\data_2022-11-01\meta_data.hdf
-path = '/Users/pauli/Documents/Studium/Master/3. Semester Auslandssemester DTU/Deep Learning/Final Project/Otovo/data_full/meta_data.hdf'
-input_path = path
-=======
+# path = '/Users/pauli/Documents/Studium/Master/3. Semester Auslandssemester DTU/Deep Learning/Final Project/Otovo/data_full/meta_data.hdf'
 path = './data_updated/meta_data.hdf'
->>>>>>> 9af3b8b21c868c4882793612d6f0eeed00696ef8
+input_path = path
 print(path)
 #df = pd.read_hdf(path, '/d')
 # centroid=df.iloc[:,6].values
@@ -80,12 +77,8 @@ num_epochs = 50
 # Train model
 model = model_resnet18(network, criterion, optimizer, num_epochs, train_loader, valid_loader, device)
 
-<<<<<<< HEAD
 torch.save(model, 'resnet_first_28_11_22_j')
 
 
-=======
-torch.save(model, 'resnet18_constant_minus100_27_11_22.pt')
->>>>>>> 9af3b8b21c868c4882793612d6f0eeed00696ef8
 
 
