@@ -1,9 +1,3 @@
-# %% [markdown]
-# # Model testing 
-
-# %% [markdown]
-# ## Import libraries
-
 # %%
 import numpy as np
 import torch
@@ -25,7 +19,7 @@ import sys
 #sys.path.insert(0, '/Users/pauli/Documents/Studium/Master/3. Semester Auslandssemester DTU/Deep Learning/Final Project/Otovo/')
 #from autotetris.dataloader import RoofDataSet
 from lib.dataloader import RoofDataSet, Transforms
-from modeltraining import Resnet18, Resnet50, PadMSEloss, VarMSEloss, VarDiffloss, train_model, test_model
+from lib.modeltraining import Resnet18, Resnet50, VarMSEloss, VarDiffloss, train_model, test_model
 # from model_resnet_test import ResNet
 from individual_tests.jaime.testing_resnets import ResNet
 
@@ -36,9 +30,6 @@ from individual_tests.jaime.testing_resnets import ResNet
 path = 'C:/Users/guzma/OneDrive/Documents/TEC/DTU/02456/Project/Github_Project/Dataset/data_2022-11-01/meta_data.hdf'
 # path = 'data_2022-11-01/meta_data.hdf'
 input_path = path
-
-# %% [markdown]
-# ## Data Loading
 
 # %%
 max_size = 30
@@ -51,9 +42,6 @@ image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 # Create testset
 len_test_set = int(0.1*len(dataset))
 len_train_set = len(dataset) - len_test_set
-
-# %% [markdown]
-# ## Train test split
 
 # %%
 train_dataset , test_dataset  = torch.utils.data.random_split(dataset, [len_train_set, len_test_set], generator=torch.Generator().manual_seed(1))
@@ -76,9 +64,6 @@ train_loader = DataLoader(train_dataset, batch_size=4, shuffle=True)
 valid_loader = DataLoader(valid_dataset, batch_size=4, shuffle=True)
 test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False, collate_fn=lambda x: tuple(x_.to("cpu") for x_ in default_collate(x)))
 # test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False)
-
-# %% [markdown]
-# ## Model Training
 
 # %%
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

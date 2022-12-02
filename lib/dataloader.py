@@ -87,7 +87,7 @@ class RoofDataSet(Dataset):
         # plt.xticks([])
         # plt.yticks([])
         plt.pause(0.001)  # pause a bit so that plots are updated
-        plt.show()
+        plt.show() 
 
 class Transforms():
     def __init__(self, new_size = (224, 224), transform_list = ["resize", "to_tensor"]):
@@ -102,8 +102,6 @@ class Transforms():
     def to_tensor(self, image, centroids):
         """Convert image and centroids into tensor"""
         tensor = transforms.ToTensor()
-        if torch.cuda.is_available():
-            return tensor(image).cuda(), torch.tensor(centroids).cuda()
         return tensor(image), torch.tensor(centroids)
 
     def resize(self, image, centroids):
