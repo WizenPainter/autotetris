@@ -36,10 +36,9 @@ class Resnet50(nn.Module):
         return x
 
 class Resnet18_GAP(nn.Module): 
-    def __init__(self,num_classes=200, heatmap = False):
+    def __init__(self,num_classes=200):
         super().__init__()
         self.model_name='resnet18'
-        self.heatmap = heatmap
         resnet = models.resnet18()
         modules = list(resnet.children())[:-2]
         self.model = nn.Sequential(*modules)
@@ -49,7 +48,7 @@ class Resnet18_GAP(nn.Module):
         # self.features = self.model.children()
         self.fc = nn.Linear(512, num_classes)
 
-    def forward(self, x):
+    def forward(self, x, heatmap = True):
         # x = self.features(x)
         x = self.model(x)
         # x = self.conv1(x)
@@ -57,7 +56,7 @@ class Resnet18_GAP(nn.Module):
         # x = torch.mean(x.view(x.size(0), x.size(1), -1), dim=2)
         x = self.gap(x)
         x = self.fc(x.view(1,-1))
-        if self.heatmap:
+        if heatmap:
             return final_conv_output, x
         return x
 
@@ -249,3 +248,7 @@ def test_model(model, test_loader, num_tests):
         plt.show()
 
     return predictions
+
+
+def plot_activation_map(model, image):
+    conv_output, predict = model(image)
