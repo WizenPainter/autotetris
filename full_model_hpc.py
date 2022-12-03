@@ -5,6 +5,7 @@ import torch.optim as optim
 
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
+from torch.utils.data.dataloader import default_collate
 
 import cv2
 
@@ -20,8 +21,7 @@ path = 'C:/Users/guzma/OneDrive/Documents/TEC/DTU/02456/Project/Github_Project/D
 input_path = path
 print(path)
 #%%
-max_size = 60
-dataset = RoofDataSet(path, transform=Transforms(new_size=(256,256)), mode = "constant", max_size=max_size)
+dataset = RoofDataSet(path, transform=Transforms(new_size=(224,224)), mode = "constant") # Optimal size is 224 according to OpenAI
 imp_path = dataset.image_paths +  "/"+dataset.id[0]+"-b15-otovowms.jpeg"
 image = cv2.imread(imp_path)
 image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
@@ -60,7 +60,7 @@ print(device)
 image, centroid = next(iter(train_loader))
 # print(image.shape, centroid.shape, centroid)
 #%%
-network = Resnet50(num_classes=max_size*2)
+network = Resnet50(num_classes=dataset.max_num_panels)
 # network = ResNet()
 network.to(device)
 # print(network)
@@ -73,7 +73,7 @@ optimizer = optim.Adam(network.parameters(), lr=0.0001)
 scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
 
 loss_min = 0.001
-num_epochs = 10
+num_epochs = 5 # after 5 epochs the model has almost no improvement that justifies the time spent.
 
 # Train model
 model = train_model(network, criterion, optimizer, num_epochs, train_loader, valid_loader, device)
