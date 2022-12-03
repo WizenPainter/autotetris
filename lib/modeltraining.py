@@ -48,7 +48,7 @@ class Resnet18_GAP(nn.Module):
         # self.features = self.model.children()
         self.fc = nn.Linear(512, num_classes)
 
-    def forward(self, x, heatmap = True):
+    def forward(self, x, heatmap = False):
         # x = self.features(x)
         x = self.model(x)
         # x = self.conv1(x)
@@ -221,7 +221,7 @@ def test_model(model, test_loader, num_tests):
     for step in range(1,num_tests + 1):
         image, centroids = next(iterator_c)
         prediction = model(image)
-        predictions.append(prediction.view(-1,30,2))
+        predictions.append(prediction.view(-1,50,2))
 
         # Prepare data for plotting
         image = image.squeeze()
@@ -230,7 +230,7 @@ def test_model(model, test_loader, num_tests):
         centroids = centroids.numpy()
         centroids = centroids[0]
 
-        prediction = prediction.view(-1, 30, 2)
+        prediction = prediction.view(-1, 50, 2)
         prediction = prediction.detach().numpy()
         prediction = prediction[0]
 
@@ -250,5 +250,3 @@ def test_model(model, test_loader, num_tests):
     return predictions
 
 
-def plot_activation_map(model, image):
-    conv_output, predict = model(image)
