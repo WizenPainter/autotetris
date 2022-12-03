@@ -60,7 +60,7 @@ class Resnet18_GAP(nn.Module):
         # print(x.view(1,-1).shape)
         # x = self.fc(x.view(1,-1))
         x=self.fc(x.squeeze())
-        if self.heatmap:
+        if heatmap:
             return final_conv_output, x
         return x
 
@@ -225,7 +225,7 @@ def test_model(model, test_loader, num_tests):
     for step in range(1,num_tests + 1):
         image, centroids = next(iterator_c)
         prediction = model(image)
-        predictions.append(prediction.view(-1,50,2))
+        predictions.append(prediction.view(-1,37,2))
 
         # Prepare data for plotting
         image = image.squeeze()
@@ -234,7 +234,7 @@ def test_model(model, test_loader, num_tests):
         centroids = centroids.numpy()
         centroids = centroids[0]
 
-        prediction = prediction.view(-1, 50, 2)
+        prediction = prediction.view(-1, 37, 2)
         prediction = prediction.detach().numpy()
         prediction = prediction[0]
 
