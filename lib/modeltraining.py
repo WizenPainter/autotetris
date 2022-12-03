@@ -35,33 +35,31 @@ class Resnet50(nn.Module):
         x=self.model(x)
         return x
 
-class GAP_Model(nn.Module): 
-    def __init__(self,num_classes=200):
+class Resnet18_GAP(nn.Module): 
+    def __init__(self,num_classes=200, heatmap = False):
         super().__init__()
         self.model_name='resnet18'
-        self.model=models.resnet18()
-        self.conv1=nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3, bias=False)
-        self.gap = GAP()
-        self.fc=nn.Linear(self.model.fc.in_features, num_classes)
+        self.heatmap = heatmap
+        resnet = models.resnet18()
+        modules = list(resnet.children())[:-2]
+        self.model = nn.Sequential(*modules)
+        # self.model.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3, bias=False)
+        self.gap = nn.AdaptiveAvgPool2d(1) #study how this works!! 
+        # self.fc=nn.Linear(self.model.fc.in_features, num_classes)
+        # self.features = self.model.children()
+        self.fc = nn.Linear(512, num_classes)
 
     def forward(self, x):
+        # x = self.features(x)
         x = self.model(x)
-        x = self.conv1(x)
+        # x = self.conv1(x)
+        final_conv_output = x
+        # x = torch.mean(x.view(x.size(0), x.size(1), -1), dim=2)
         x = self.gap(x)
-        x = self.fc(x)
+        x = self.fc(x.view(1,-1))
+        if self.heatmap:
+            return final_conv_output, x
         return x
-
-import torch
-
-# define the GAP activation layer
-class GAP(torch.nn.Module):
-    def __init__(self):
-        super(GAP, self).__init__()
-
-    def forward(self, x):
-        # compute the average of the values in the input tensor
-        out = torch.mean(x, dim=(2, 3))
-        return out
 
 
 # Loss function
