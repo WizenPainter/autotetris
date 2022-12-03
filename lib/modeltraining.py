@@ -56,8 +56,12 @@ class Resnet18_GAP(nn.Module):
         final_conv_output = x
         # x = torch.mean(x.view(x.size(0), x.size(1), -1), dim=2)
         x = self.gap(x)
-        x = self.fc(x.view(1,-1))
-        if heatmap:
+        # print(x.shape)
+        # print(x.squeeze().shape)
+        # print(x.view(1,-1).shape)
+        # x = self.fc(x.view(1,-1))
+        x=self.fc(x.squeeze())
+        if self.heatmap:
             return final_conv_output, x
         return x
 
