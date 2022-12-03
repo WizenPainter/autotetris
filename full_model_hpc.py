@@ -23,15 +23,14 @@ print(path)
 #%%
 dataset = RoofDataSet(path, transform=Transforms(new_size=(224,224)), mode = "constant") # Optimal size is 224 according to OpenAI
 imp_path = dataset.image_paths +  "/"+dataset.id[0]+"-b15-otovowms.jpeg"
-image = cv2.imread(imp_path)
-image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
 #%%
 # split the dataset into training, validation and test sets
 # Create testset
 len_test_set = int(0.1*len(dataset))
 len_train_set = len(dataset) - len_test_set
 
-train_dataset , test_dataset  = torch.utils.data.random_split(dataset, [len_train_set, len_test_set])
+train_dataset , test_dataset  = torch.utils.data.random_split(dataset, [len_train_set, len_test_set], generator=torch.Generator().manual_seed(1))
 
 
 len_valid_set = int(0.1*len(train_dataset))
