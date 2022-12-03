@@ -61,7 +61,6 @@ class Resnet18_GAP(nn.Module):
         # print(x.view(1,-1).shape)
         # x = self.fc(x.view(1,-1))
         x=self.fc(x.squeeze())
-
         if heatmap:
             return final_conv_output, x
         return x
