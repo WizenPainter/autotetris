@@ -14,7 +14,7 @@ import cv2
 import sys
 from lib.dataloader import RoofDataSet
 from lib.dataloader import Transforms
-from lib.modeltraining import Resnet18, Resnet50, PadMSEloss, VarMSEloss, VarDiffloss, train_model, test_model
+from lib.modeltraining import Resnet18, Resnet50, Resnet18_GAP ,PadMSEloss, VarMSEloss, VarDiffloss, train_model, test_model
 #%%
 # path = '/Users/pauli/Documents/Studium/Master/3. Semester Auslandssemester DTU/Deep Learning/Final Project/Otovo/data_full/meta_data.hdf'
 path = 'C:/Users/guzma/OneDrive/Documents/TEC/DTU/02456/Project/Github_Project/Dataset/data_2022-11-01/meta_data.hdf'
@@ -59,7 +59,7 @@ print(device)
 image, centroid = next(iter(train_loader))
 # print(image.shape, centroid.shape, centroid)
 #%%
-network = Resnet50(num_classes=dataset.max_num_panels)
+network = Resnet18_GAP(num_classes=dataset.max_num_panels*2)
 # network = ResNet()
 network.to(device)
 # print(network)
@@ -72,12 +72,12 @@ optimizer = optim.Adam(network.parameters(), lr=0.0001)
 scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
 
 loss_min = 0.001
-num_epochs = 5 # after 5 epochs the model has almost no improvement that justifies the time spent.
+num_epochs = 1 # after 5 epochs the model has almost no improvement that justifies the time spent.
 
 # Train model
 model = train_model(network, criterion, optimizer, num_epochs, train_loader, valid_loader, device)
 
-torch.save(model, 'resnet_diff_sgd_10_02_12_22_j.pt')
+torch.save(model, 'resnet_18_gap_diff_sgd_10_02_12_22_j.pt')
 
 
 
