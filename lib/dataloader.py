@@ -94,7 +94,7 @@ class RoofDataSet(Dataset):
         plt.show() 
 
 class Transforms():
-    def __init__(self, new_size = (224, 224), transform_list = ["resize", "to_tensor"]):
+    def __init__(self, new_size = (224, 224), transform_list = ["resize", "to_tensor"], to_heatmap = False):
         """Args: 
                 img_size: indicates the desired size for resizing
                 transform_list: list with desired transforms to be computed. 
@@ -102,6 +102,7 @@ class Transforms():
         """
         self.new_size = new_size 
         self.transform_list = transform_list
+        self.heatmap = to_heatmap
 
     def to_tensor(self, image, centroids):
         """Convert image and centroids into tensor"""
@@ -118,10 +119,25 @@ class Transforms():
             print(centroids)
             centroids = np.transpose(centroids).dot([self.new_size[0] / 500, self.new_size[1] / 500])
         return image, centroids
+    
+    def to_heatmap(self, image, centroids):
+        """Convert centroids into heatmap"""
+        masks = []
+        for coords in centroids:
+            mask = torch.zeros_like(image)
+            # mask[coords[0], coords[1]] = 1
+            for coord in coords:
+                mask[coord[0], coord[1]] = 1
+            masks.append(mask)
+        return image, torch.stack(masks)
+        # heatmap = np.zeros((self.new_size[0], self.new_size[1]))
+        # for centroid in centroids:
+        #     heatmap[int(centroid[0]), int(centroid[1])] = 1
+        # return image, heatmap
 
     def __call__(self, image, centroids):
         """Execute all desired transforms"""
-        transform_dic = {"resize": self.resize, "to_tensor": self.to_tensor}
+        transform_dic = {"resize": self.resize, "to_tensor": self.to_tensor, 'to_heatmap': self.to_heatmap}
         for transform in self.transform_list:
             image, centroids = transform_dic[transform](image, centroids)
         # image, centroids = self.resize(image, centroids)

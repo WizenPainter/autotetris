@@ -120,7 +120,7 @@ class VarDiffloss(nn.MSELoss):
 
 
 # Model training
-def train_model(network, criterion, optimizer, num_epochs, train_loader, valid_loader, device = 'cpu'):
+def train_model(network, criterion, optimizer, num_epochs, train_loader, valid_loader, device = 'cpu', mask=False):
     loss_train_full = []
     loss_val_full = []
     start_time = time.time()
@@ -143,14 +143,14 @@ def train_model(network, criterion, optimizer, num_epochs, train_loader, valid_l
             images = images.to(device)
             centroids = centroids.view(centroids.size(0),-1).to(device)
             # print(centroids.shape)
-
+            
             #print(images.shape)
             #print(image)
-
             predictions = network(images)
 
             # clear all the gradients before calculating them
             optimizer.zero_grad()
+
 
             # find the loss for the current step
             loss_train_step = criterion(predictions, centroids)
