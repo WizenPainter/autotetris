@@ -74,7 +74,7 @@ class RoofDataSet(Dataset):
             centroids = self.centroid[idx]
 
         #Floats needed in pytorch models
-        return image.float(), centroids.float() # Change is necessary to run Network loss
+        return image.float(), centroids # Change is necessary to run Network loss
 
     def centroid_padding():
         """Padd all labels to obtain the same size """
@@ -94,7 +94,7 @@ class RoofDataSet(Dataset):
         plt.show() 
 
 class Transforms():
-    def __init__(self, new_size = (224, 224), transform_list = ["resize", "to_tensor"]):
+    def __init__(self, new_size = (224, 224), transform_list = ["resize", "to_tensor"], to_heatmap = False):
         """Args: 
                 img_size: indicates the desired size for resizing
                 transform_list: list with desired transforms to be computed. 
@@ -102,6 +102,7 @@ class Transforms():
         """
         self.new_size = new_size 
         self.transform_list = transform_list
+        self.heatmap = to_heatmap
 
     def to_tensor(self, image, centroids):
         """Convert image and centroids into tensor"""
@@ -118,10 +119,26 @@ class Transforms():
             print(centroids)
             centroids = np.transpose(centroids).dot([self.new_size[0] / 500, self.new_size[1] / 500])
         return image, centroids
+    
+    def to_heatmap(self, image, centroids):
+        """Convert centroids into heatmap"""
+        masks = []
+        if type(image) != torch.Tensor:
+            tensor = transforms.ToTensor()
+            image = tensor(image)
+        if type(centroids) == torch.Tensor:
+            centroids = centroids.numpy()
+            centroids = centroids[0]
+        mask = torch.zeros_like(image[0])
+        for coords in centroids:
+            coord = [int(round(c)) for c in coords]
+            mask[coord[0], coord[1]] = 1
+        masks.append(mask)
+        return image, torch.stack(masks)
 
     def __call__(self, image, centroids):
         """Execute all desired transforms"""
-        transform_dic = {"resize": self.resize, "to_tensor": self.to_tensor}
+        transform_dic = {"resize": self.resize, "to_tensor": self.to_tensor, 'to_heatmap': self.to_heatmap}
         for transform in self.transform_list:
             image, centroids = transform_dic[transform](image, centroids)
         # image, centroids = self.resize(image, centroids)
