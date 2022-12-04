@@ -149,7 +149,8 @@ def train_model(network, criterion, optimizer, num_epochs, train_loader, valid_l
             # centroids = centroids.view(centroids.size(0),-1).to(device)
             centroids = centroids.to(device)
             # print(centroids.shape)
-
+            
+            #print(images.shape)
             #print(image)
             predictions = network(images)
 
@@ -169,6 +170,7 @@ def train_model(network, criterion, optimizer, num_epochs, train_loader, valid_l
             # else:
             # clear all the gradients before calculating them
             optimizer.zero_grad()
+
 
             # find the loss for the current step
             # print(predictions.shape)
