@@ -40,21 +40,19 @@ class Resnet18_GAP(nn.Module):
     def __init__(self,num_classes=200):
         super().__init__()
         self.model_name='resnet18'
-        resnet = models.resnet18(pretrained=False)
-        # modules = list(resnet.children())[:-2]
-        # self.model = nn.Sequential(*modules)
-        self.model = resnet
-        # self.gap = nn.AdaptiveAvgPool2d(1) #study how this works!! 
-        self.fc1 = nn.Linear(1000, 256)
-        self.fc2 = nn.Linear(256, num_classes)
+        resnet = models.resnet18()
+        modules = list(resnet.children())[:-2] #Removing the last two layers (up until before the Pooling)
+        self.model = nn.Sequential(*modules)
+        self.gap = nn.AdaptiveAvgPool2d(1) #Pooling down
+        self.fc = nn.Linear(512, num_classes) #Last linear layer 
 
-    def forward(self, x):
+    def forward(self, x, heatmap = False):
         x = self.model(x)
-        # final_conv_output = x
-        x = self.fc1(x)
-        x = self.fc2(x)
-        # if heatmap:
-        #     return final_conv_output, x
+        final_conv_output = x
+        x = self.gap(x)
+        x=self.fc(x.squeeze())
+        if heatmap:
+            return final_conv_output, x
         return x
 
 class SolarPanelDetector(nn.Module):
@@ -346,78 +344,43 @@ def test_model_heat(model, test_loader, num_tests):
 
         plt.show()
 
-
-def plot_activation_map_coordinates(model, test_loader, num_tests):
-
+def plot_CAM(model, test_loader, num_tests):
+    """Plots the Class Activation Mappings for a model """
     iterator_c = iter(test_loader)
-    image, centroids = next(iterator_c)
 
-    weights = model.fc.weight #Get weights of the last layer 
-
-    image = image.squeeze()
-    image = image.permute(0, 2, 1)
-
-    for i in range(1,num_tests + 1):
+    for step in range(num_tests):
+        image, centroid = next(iterator_c)
         conv_output, prediction = model(image, heatmap = True) #Get the output of the last conv layer and the network
-        conv_output = np.squeeze(conv_output) 
-
-        coordinate_weights = weights[i,:].detach() #The weights for one of the coordinates. NOTE: 0 could be changed
-
-        mat_for_mult = zoom(conv_output.detach(), (32, 32, 1), order=1)
-        final_output = np.dot(mat_for_mult.reshape((224*224, 512)), coordinate_weights).reshape(224,224) # dim: 224 x 224
         
-        plt.imshow(image, alpha=0.5)
-        plt.imshow(final_output, cmap='jet', alpha=0.5)
+        map = torch.mean(conv_output, dim = (0,1)) #Averaging over features 
+        map = map.unsqueeze(dim=0)
+        map = map.unsqueeze(dim=1)  #Expanidng channels 
+        upscale = torch.nn.Upsample(scale_factor=32, mode='bicubic', recompute_scale_factor=True) #Upscaling
+        map = upscale(map)
+        map = map/torch.max(map) #Normalizing
 
-    prediction = prediction.view(-1, 50, 2)
-    prediction = prediction.detach().numpy()
-    prediction = prediction[0]
-    plt.scatter(prediction[:, 1], prediction[:, 0], s=10, marker='.', c='r')
-
-    plt.show()
-
-def plot_activation_map_images(model, test_loader, num_tests, idx1, idx2):
-
-    iterator_c = iter(test_loader)
-
-    for step in range(1,num_tests + 1):
-        image, centroids = next(iterator_c)
-        conv_output, prediction = model(image, heatmap = True) #Get the output of the last conv layer and the network
-        conv_output = np.squeeze(conv_output)
+        # Preprocessing data for graphing
+        image_plot = image.squeeze()
+        image_plot = image_plot.permute(1, 2, 0)
+        # m2 = map.transpose(0,1)
 
         prediction = prediction.view(-1, 37, 2)
         prediction = prediction.detach().numpy()
         prediction = prediction[0]
 
-        print(conv_output.shape)
-        print()
-        weights = model.fc.weight #Get weights of the last layer 
-        # coordinate_x = weights[idx1,:].detach() #The weights for one of the coordinates. NOTE: 0 could be changed
-        # coordinate_y = weights[idx2,:].detach() #The weights for one of the coordinates. NOTE: 0 could be changed
-        # print(conv_output.shape)
-        # mat_for_mult = zoom(conv_output.detach(), (32, 32, 1), order=1)
-        # final_output_x = np.dot(mat_for_mult.reshape((224*224, 512)), coordinate_x).reshape(224,224) # dim: 224 x 224
-        # final_output_y = np.dot(mat_for_mult.reshape((224*224, 512)), coordinate_y).reshape(224,224) # dim: 224 x 224
-
-        image = image.squeeze()
-        image = image.permute(1, 2, 0)
+        centroid_plot = centroid.squeeze()
         
-        # print(image.shape)
-        fig, ax = plt.subplots(1, 2)
-
-        ax[0].imshow(image, alpha=0.5)
-        # ax[0].imshow(final_output_x, cmap='viridis', alpha=0.5)
-        ax[0].set_title("X coordinate")
-        ax[0].legend(loc="upper right")
-        ax[0].axis("off")
-
-        ax[1].imshow(image, alpha=0.5)
-        # ax[1].imshow(final_output_y, cmap='viridis', alpha=0.5)
-        ax[1].set_title("Y coordinate")
-        ax[1].legend(loc="upper right")
-        ax[1].axis("off")
+        #Plotting 
+        fig, ax = plt.subplots(1, 2, figsize=(8, 8))
+        cbar = fig.colorbar(plt.cm.ScalarMappable(cmap="jet"), location = "bottom")
+        ax[0].imshow(image_plot)
+        ax[0].imshow(map[0][0].detach(), alpha=0.3, cmap ='jet')
 
         ax[0].scatter(prediction[:, 1], prediction[:, 0], s=10, marker='.', c='r')
-        ax[1].scatter(prediction[:, 1], prediction[:, 0], s=10, marker='.', c='r')
+        ax[0].set_title("Model Prediction")
+
+        ax[1].imshow(image_plot)
+        ax[1].scatter(centroid_plot[:, 1], centroid_plot[:, 0], s=10, marker='.', c='b')
+        ax[1].set_title("Reality")
 
         plt.show()
