@@ -297,14 +297,15 @@ def plot_activation_map_images(model, test_loader, num_tests, idx1, idx2):
         prediction = prediction.detach().numpy()
         prediction = prediction[0]
 
+        print(conv_output.shape)
+        print()
         weights = model.fc.weight #Get weights of the last layer 
-        coordinate_x = weights[idx1,:].detach() #The weights for one of the coordinates. NOTE: 0 could be changed
-        coordinate_y = weights[idx2,:].detach() #The weights for one of the coordinates. NOTE: 0 could be changed
-        print(weights)
+        # coordinate_x = weights[idx1,:].detach() #The weights for one of the coordinates. NOTE: 0 could be changed
+        # coordinate_y = weights[idx2,:].detach() #The weights for one of the coordinates. NOTE: 0 could be changed
         # print(conv_output.shape)
-        mat_for_mult = zoom(conv_output.detach(), (32, 32, 1), order=1)
-        final_output_x = np.dot(mat_for_mult.reshape((224*224, 512)), coordinate_x).reshape(224,224) # dim: 224 x 224
-        final_output_y = np.dot(mat_for_mult.reshape((224*224, 512)), coordinate_y).reshape(224,224) # dim: 224 x 224
+        # mat_for_mult = zoom(conv_output.detach(), (32, 32, 1), order=1)
+        # final_output_x = np.dot(mat_for_mult.reshape((224*224, 512)), coordinate_x).reshape(224,224) # dim: 224 x 224
+        # final_output_y = np.dot(mat_for_mult.reshape((224*224, 512)), coordinate_y).reshape(224,224) # dim: 224 x 224
 
         image = image.squeeze()
         image = image.permute(1, 2, 0)
@@ -313,13 +314,13 @@ def plot_activation_map_images(model, test_loader, num_tests, idx1, idx2):
         fig, ax = plt.subplots(1, 2)
 
         ax[0].imshow(image, alpha=0.5)
-        ax[0].imshow(final_output_x, cmap='viridis', alpha=0.5)
+        # ax[0].imshow(final_output_x, cmap='viridis', alpha=0.5)
         ax[0].set_title("X coordinate")
         ax[0].legend(loc="upper right")
         ax[0].axis("off")
 
         ax[1].imshow(image, alpha=0.5)
-        ax[1].imshow(final_output_y, cmap='viridis', alpha=0.5)
+        # ax[1].imshow(final_output_y, cmap='viridis', alpha=0.5)
         ax[1].set_title("Y coordinate")
         ax[1].legend(loc="upper right")
         ax[1].axis("off")
