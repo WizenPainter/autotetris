@@ -5,12 +5,13 @@ import torch.optim as optim
 
 from torch.utils.data import DataLoader
 
+import sys
+sys.path.insert(0, "/Users/alex_christlieb/Documents/Ecole Polytechnique/Exchange/DTU/Courses/Deep Learning/autotetris")
 # Data Loader
-from lib.dataloader import RoofDataSet
-from lib.dataloader import Transforms
-from lib.modeltraining import GAP_Model, VarDiffloss, train_model, test_model
+from lib.modeltraining import Resnet18_GAP, VarDiffloss, train_model
+from lib.dataloader import RoofDataSet, Transforms
 
-path_alejandro = "/Users/alex_christlieb/Desktop/small_sample_out/metadata_sample.hdf"
+path_alejandro = '/Users/alex_christlieb/Downloads/Dataset/data_2022-11-01/meta_data.hdf'
 #%%
 dataset = RoofDataSet(path_alejandro, transform=Transforms(new_size=(224,224)), mode = "constant")
 #%%
@@ -51,7 +52,7 @@ image, centroid = next(iter(train_loader))
 # print(image.shape, centroid.shape, centroid)
 #%%
 # network = Resnet50(num_classes=max_size*2)
-network = GAP_Model(num_classes=dataset.max_num_panels)
+network = Resnet18_GAP(num_classes=dataset.max_num_panels*2)
 network.to(device)
 # print(network)
 
@@ -68,6 +69,6 @@ num_epochs = 5
 # Train model
 model = train_model(network, criterion, optimizer, num_epochs, train_loader, valid_loader, device)
 
-torch.save(model, 'resnet_gap_5_02_12_22_a.pt')
+torch.save(model, 'resnet_gap_5_05_12_22_a.pt')
 
 

@@ -176,10 +176,10 @@ def train_model(network, criterion, optimizer, num_epochs, train_loader, valid_l
             centroids = centroids.to(device)
             # print(centroids.shape)
             
-            print(images.shape)
-            print(centroids.shape)
+            # print(images.shape)
+            # print(centroids.shape)
             # predictions = network(images)
-            predictions = network(images, centroids)
+            predictions = network(images)
             # predictions = predictions[0]['masks']
 
             # if mask:

@@ -74,7 +74,7 @@ class RoofDataSet(Dataset):
             centroids = self.centroid[idx]
 
         #Floats needed in pytorch models
-        return image.float(), centroids # Change is necessary to run Network loss
+        return image.float(), centroids.float() # Change is necessary to run Network loss
 
     def centroid_padding():
         """Padd all labels to obtain the same size """
