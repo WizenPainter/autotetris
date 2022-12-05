@@ -74,7 +74,7 @@ class RoofDataSet(Dataset):
             centroids = self.centroid[idx]
 
         #Floats needed in pytorch models
-        return image.float(), centroids.float() # Change is necessary to run Network loss
+        return image.float(), centroids # Change is necessary to run Network loss
 
     def centroid_padding():
         """Padd all labels to obtain the same size """
@@ -123,17 +123,18 @@ class Transforms():
     def to_heatmap(self, image, centroids):
         """Convert centroids into heatmap"""
         masks = []
+        if type(image) != torch.Tensor:
+            tensor = transforms.ToTensor()
+            image = tensor(image)
+        if type(centroids) == torch.Tensor:
+            centroids = centroids.numpy()
+            centroids = centroids[0]
+        mask = torch.zeros_like(image[0])
         for coords in centroids:
-            mask = torch.zeros_like(image)
-            # mask[coords[0], coords[1]] = 1
-            for coord in coords:
-                mask[coord[0], coord[1]] = 1
-            masks.append(mask)
+            coord = [int(round(c)) for c in coords]
+            mask[coord[0], coord[1]] = 1
+        masks.append(mask)
         return image, torch.stack(masks)
-        # heatmap = np.zeros((self.new_size[0], self.new_size[1]))
-        # for centroid in centroids:
-        #     heatmap[int(centroid[0]), int(centroid[1])] = 1
-        # return image, heatmap
 
     def __call__(self, image, centroids):
         """Execute all desired transforms"""

@@ -14,14 +14,14 @@ import cv2
 import sys
 from lib.dataloader import RoofDataSet
 from lib.dataloader import Transforms
-from lib.modeltraining import Resnet18, Resnet50, Resnet18_GAP ,PadMSEloss, VarMSEloss, VarDiffloss, train_model, test_model
+from lib.modeltraining import Resnet18, Resnet50, Resnet18_GAP, MaskRCNN, DiceLoss ,PadMSEloss, VarMSEloss, VarDiffloss, train_model, test_model, SolarPanelDetector
 #%%
 # path = '/Users/pauli/Documents/Studium/Master/3. Semester Auslandssemester DTU/Deep Learning/Final Project/Otovo/data_full/meta_data.hdf'
 path = 'C:/Users/guzma/OneDrive/Documents/TEC/DTU/02456/Project/Github_Project/Dataset/data_2022-11-01/meta_data.hdf'
 input_path = path
 print(path)
 #%%
-dataset = RoofDataSet(path, transform=Transforms(new_size=(224,224)), mode = "constant") # Optimal size is 224 according to OpenAI
+dataset = RoofDataSet(path, transform=Transforms(new_size=(224,224), transform_list = ["resize", 'to_heatmap'], to_heatmap=True), mode = "constant") # Optimal size is 224 according to OpenAI
 imp_path = dataset.image_paths +  "/"+dataset.id[0]+"-b15-otovowms.jpeg"
 
 #%%
@@ -59,25 +59,30 @@ print(device)
 image, centroid = next(iter(train_loader))
 # print(image.shape, centroid.shape, centroid)
 #%%
-network = Resnet18_GAP(num_classes=dataset.max_num_panels*2)
+# network = Resnet18_GAP(num_classes=dataset.max_num_panels)
+network = MaskRCNN()
+# network = SolarPanelDetector()
 # network = ResNet()
 network.to(device)
 # print(network)
 
 # Adjust network parameter
-criterion = VarDiffloss()
+# criterion = VarDiffloss()
+# criterion = nn.CrossEntropyLoss()
+# criterion = nn.BCEWithLogitsLoss()
+criterion = DiceLoss()
 # SGD diverges on our model
 # optimizer = optim.SGD(network.parameters(), lr=0.0001)
 optimizer = optim.Adam(network.parameters(), lr=0.0001)
 scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
 
-loss_min = 0.001
+loss_min = np.inf
 num_epochs = 1 # after 5 epochs the model has almost no improvement that justifies the time spent.
 
 # Train model
-model = train_model(network, criterion, optimizer, num_epochs, train_loader, valid_loader, device)
+model = train_model(network, criterion, optimizer, num_epochs, train_loader, valid_loader, device, mask=True)
 
-torch.save(model, 'resnet_18_gap_diff_sgd_10_02_12_22_j.pt')
+torch.save(model, 'trained_models/resnet_heatmap_18_gap2_diff_sgd_04_02_12_22_j.pt')
 
 
 
