@@ -70,6 +70,34 @@ class SolarPanelDetector(nn.Module):
         x = self.fc2(x)
         return x
 
+class MaskRCNN(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.model = models.detection.maskrcnn_resnet50_fpn(weights=True)
+
+    def forward(self, x, y):
+        self.model.eval()
+        output = self.model(x, y)
+        return output[0]['masks']
+
+
+class DiceLoss(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.bce_loss = nn.BCEWithLogitsLoss()
+
+    def dice_loss(self, pred, target):
+        smooth = 1.
+        pred = pred.contiguous().view(-1)
+        target = target.contiguous().view(-1)
+        intersection = (pred * target).sum()
+        return 1 - ((2. * intersection + smooth) / (pred.sum() + target.sum() + smooth))
+
+    def forward(self, pred, target):
+        return self.bce_loss(pred, target) + self.dice_loss(pred, target)
+
+
+
 
 # Loss function
 class PadMSEloss(nn.MSELoss):
@@ -150,9 +178,11 @@ def train_model(network, criterion, optimizer, num_epochs, train_loader, valid_l
             centroids = centroids.to(device)
             # print(centroids.shape)
             
-            #print(images.shape)
-            #print(image)
-            predictions = network(images)
+            print(images.shape)
+            print(centroids.shape)
+            # predictions = network(images)
+            predictions = network(images, centroids)
+            # predictions = predictions[0]['masks']
 
             # if mask:
             #     masks = []
