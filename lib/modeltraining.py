@@ -469,11 +469,14 @@ def plot_losses_together(train_loss, val_loss):
         - train_loss: np.array
         - val_loss: np.array
     """
-    plt.figure(figsize = (10,10))
+    plt.figure(figsize = (30,20))
+    plt.style.use('classic')
+    plt.rcParams.update({'font.size': 35})
+
     x = np.arange(len(train_loss))
 
-    plt.plot(x, train_loss, label = "Training loss")
-    plt.plot(x, val_loss, label = "Validation loss")
+    plt.plot(x, train_loss, label = "Training loss", linewidth = 7.0)
+    plt.plot(x, val_loss, label = "Validation loss", linewidth = 7.0)
     plt.xlabel('Epochs')
     plt.legend(loc = 'upper right')
     plt.ylim(bottom = 0)
