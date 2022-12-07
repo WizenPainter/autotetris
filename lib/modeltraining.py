@@ -56,6 +56,25 @@ class Resnet18_GAP(nn.Module):
             return final_conv_output, x
         return x
 
+class Resnet50_GAP(nn.Module): 
+    def __init__(self,num_classes=200):
+        super().__init__()
+        self.model_name='resnet50'
+        resnet = models.resnet50(pretrained=True)
+        modules = list(resnet.children())[:-2] #Removing the last two layers (up until before the Pooling)
+        self.model = nn.Sequential(*modules)
+        self.gap = nn.AdaptiveAvgPool2d(1) #Pooling down
+        self.fc = nn.Linear(2048, num_classes) #Last linear layer 
+
+    def forward(self, x, heatmap = False):
+        x = self.model(x)
+        final_conv_output = x
+        x = self.gap(x)
+        x=self.fc(x.squeeze())
+        if heatmap:
+            return final_conv_output, x
+        return x
+
 class Resnet18_DSNT(nn.Module): 
     def __init__(self,num_classes=200):
         super().__init__()
@@ -224,7 +243,7 @@ def train_model(network, criterion, optimizer, num_epochs, train_loader, valid_l
             # find the loss for the current step
             # print(predictions.shape)
             # print(centroids.shape)
-            # centroids = centroids.view(4,-1)
+            centroids = centroids.view(4,-1)
             # print(centroids.shape)
             loss_train_step = criterion(predictions, centroids)
 
@@ -251,7 +270,7 @@ def train_model(network, criterion, optimizer, num_epochs, train_loader, valid_l
                 #images, centroids = next(iterator_valid)
 
                 images = images.to(device)
-                # centroids = centroids.view(centroids.size(0),-1).to(device)
+                centroids = centroids.view(centroids.size(0),-1).to(device)
 
 
                 predictions = network(images)
