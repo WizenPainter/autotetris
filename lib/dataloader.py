@@ -24,9 +24,9 @@ class RoofDataSet(Dataset):
         print("-->", "Metadata read")
 
         img_df["number_panels"] = img_df["panel_centroids"].apply(lambda x: len(x)) #Compute number of panels per building 
-        percentiles = img_df["number_panels"].describe(percentiles = [0.1, 0.47, 0.53, 0.9]).to_dict() #get dictionary with percentile values
-        self.min_num_panels = floor(percentiles['47%'])
-        self.max_num_panels = floor(percentiles['53%'])
+        percentiles = img_df["number_panels"].describe(percentiles = [0.1, 0.3, 0.7, 0.9]).to_dict() #get dictionary with percentile values
+        self.min_num_panels = floor(percentiles['30%'])
+        self.max_num_panels = floor(percentiles['70%'])
         print("-->", "Num_panels computed")
         # self.polygons = img_df["panel_polygons"] 
 

@@ -282,6 +282,7 @@ def train_model(network, criterion, optimizer, num_epochs, train_loader, valid_l
             step = step + 1
         loss_train_full.append(running_loss)
         step = 1
+
         network.eval()
         with torch.no_grad():
 
@@ -337,13 +338,13 @@ def print_overwrite(step, total_step, loss, operation):
     sys.stdout.flush()
 
 
-def test_model(model, test_loader, num_tests):
+def test_model(model, test_loader, num_tests, size):
     predictions = []
     iterator_c = iter(test_loader)
     for step in range(1,num_tests + 1):
         image, centroids = next(iterator_c)
         prediction = model(image)
-        predictions.append(prediction.view(-1,37,2))
+        predictions.append(prediction.view(-1,size,2))
 
         # Prepare data for plotting
         image = image.squeeze()
@@ -352,7 +353,7 @@ def test_model(model, test_loader, num_tests):
         centroids = centroids.numpy()
         centroids = centroids[0]
 
-        prediction = prediction.view(-1, 37, 2)
+        prediction = prediction.view(-1, size, 2)
         prediction = prediction.detach().numpy()
         prediction = prediction[0]
 
@@ -404,7 +405,7 @@ def test_model_heat(model, test_loader, num_tests):
 
         plt.show()
 
-def plot_CAM(model, test_loader, num_tests):
+def plot_CAM(model, test_loader, num_tests, size):
     """Plots the Class Activation Mappings for a model """
     iterator_c = iter(test_loader)
 
@@ -424,7 +425,7 @@ def plot_CAM(model, test_loader, num_tests):
         image_plot = image_plot.permute(1, 2, 0)
         # m2 = map.transpose(0,1)
 
-        prediction = prediction.view(-1, 37, 2)
+        prediction = prediction.view(-1, size, 2)
         prediction = prediction.detach().numpy()
         prediction = prediction[0]
 
@@ -461,4 +462,19 @@ def plot_losses(train_loss, val_loss):
     ax[1].plot(x2, val_loss)
     ax[1].set_title("Validation loss")
 
+    plt.show()
+
+def plot_losses_together(train_loss, val_loss):
+    """Plot the training and validation loss.
+        - train_loss: np.array
+        - val_loss: np.array
+    """
+    plt.figure(figsize = (10,10))
+    x = np.arange(len(train_loss))
+
+    plt.plot(x, train_loss, label = "Training loss")
+    plt.plot(x, val_loss, label = "Validation loss")
+    plt.xlabel('Epochs')
+    plt.legend(loc = 'upper right')
+    plt.ylim(bottom = 0)
     plt.show()
