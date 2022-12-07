@@ -73,7 +73,7 @@ class Resnet18_DSNT(nn.Module):
         heatmaps = subpix.spatial_softmax2d(unnormalized_heatmaps)
         coords = subpix.spatial_expectation2d(heatmaps, normalized_coordinates=False)
         if heatmap:
-            return  heatmap, coords
+            return  heatmaps, coords
         return coords
 
 class SolarPanelDetector(nn.Module):
@@ -251,17 +251,17 @@ def train_model(network, criterion, optimizer, num_epochs, train_loader, valid_l
                 #images, centroids = next(iterator_valid)
 
                 images = images.to(device)
-                centroids = centroids.view(centroids.size(0),-1).to(device)
+                # centroids = centroids.view(centroids.size(0),-1).to(device)
 
 
                 predictions = network(images)
 
                 # find the loss for the current step
-                try:
-                    loss_valid_step = criterion(predictions, centroids)
-                except:
-                    print(predictions.shape)
-                    print(centroids.shape)
+                # try:
+                loss_valid_step = criterion(predictions, centroids)
+                # except:
+                #     print(predictions.shape)
+                #     print(centroids.shape)
 
                 loss_valid += loss_valid_step.item()
                 running_loss = loss_valid/step

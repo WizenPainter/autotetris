@@ -8,20 +8,22 @@ from torch.utils.data import DataLoader
 import sys
 sys.path.insert(0, "/Users/alex_christlieb/Documents/Ecole Polytechnique/Exchange/DTU/Courses/Deep Learning/autotetris")
 # Data Loader
-from lib.modeltraining import Resnet18_GAP, VarDiffloss, train_model
-from lib.dataloader import RoofDataSet, Transforms
+from lib.modeltraining import Resnet18_GAP, Resnet18_DSNT, VarDiffloss, train_model, PadMSEloss
+from lib.dataloader import RoofDataSet, Transforms, show_centroids
+
 
 path_alejandro = '/Users/alex_christlieb/Downloads/Dataset/data_2022-11-01/meta_data.hdf'
 #%%
 dataset = RoofDataSet(path_alejandro, transform=Transforms(new_size=(224,224)), mode = "constant")
 #%%
-imp_path = dataset.image_paths +  "/"+dataset.id[0]+"-b15-otovowms.jpeg"
+# imp_path = dataset.image_paths +  "/"+dataset.id[0]+"-b15-otovowms.jpeg"
 
 #%%
 # split the dataset into training, validation and test sets
 # Create testset
-len_test_set = int(0.1*len(dataset))
-len_train_set = len(dataset) - len_test_set
+len_train_set = int(len(dataset)*0.03)
+len_test_set = len(dataset) - len_train_set
+
 
 train_dataset , test_dataset  = torch.utils.data.random_split(dataset, [len_train_set, len_test_set], generator=torch.Generator().manual_seed(1))
 
@@ -30,6 +32,8 @@ len_train_set = len(train_dataset) - len_valid_set
 
 train_dataset, valid_dataset = torch.utils.data.random_split(train_dataset, [len_train_set, len_valid_set])
 
+# img, centroid = test_dataset[0]
+# show_centroids(img, centroid, tensor = True)
 
 # %%
 print("The length of Train set is {}".format(len_train_set))
@@ -52,12 +56,12 @@ image, centroid = next(iter(train_loader))
 # print(image.shape, centroid.shape, centroid)
 #%%
 # network = Resnet50(num_classes=max_size*2)
-network = Resnet18_GAP(num_classes=dataset.max_num_panels*2)
+network = Resnet18_DSNT(num_classes=dataset.max_num_panels)
 network.to(device)
 # print(network)
 
 # Adjust network parameter
-criterion = VarDiffloss()
+criterion = PadMSEloss()
 # SGD diverges on our model
 # optimizer = optim.SGD(network.parameters(), lr=0.0001)
 optimizer = optim.Adam(network.parameters(), lr=0.0001)
