@@ -189,6 +189,26 @@ class VarDiffloss(nn.MSELoss):
 
         return F.mse_loss(input, target, reduction=self.reduction) + var_x + var_y
 
+class SqrtVarDiffloss(nn.MSELoss):
+    """MSE loss taking into account the variance of the (x,y) coordinates.
+            --> VarMSEloss(input, target) = MSE(input, target) + (Var(x_input) - Var(x_target))^2  + (Var(y_input) - Var(y_target))^2"""
+
+    def __init__(self, weight=None, size_average=None, reduce=None, reduction: str = 'mean'):
+        super().__init__(size_average, reduce, reduction)
+
+    def forward(self, input, target, ignore_index=0):
+        drop = target == ignore_index
+        input = input[~drop]
+        target = target[~drop]
+
+        reshaped_input = torch.transpose(input.view(-1, 2), 0, 1)
+        reshaped_target = torch.transpose(target.view(-1, 2), 0, 1)
+
+        var_x = torch.var(reshaped_input[0] - reshaped_target[0])
+        var_y = torch.var(reshaped_input[1] - reshaped_target[1])
+
+        return torch.sqrt(F.mse_loss(input, target, reduction=self.reduction)) + var_x + var_y
+
 
 # Model training
 def train_model(network, criterion, optimizer, num_epochs, train_loader, valid_loader, device = 'cpu', mask=False):
