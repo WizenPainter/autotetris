@@ -5,6 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torchvision import models
 from scipy.ndimage import zoom 
+from kornia.geometry import subpix
 
 import time
 import matplotlib.pyplot as plt
@@ -54,6 +55,26 @@ class Resnet18_GAP(nn.Module):
         if heatmap:
             return final_conv_output, x
         return x
+
+class Resnet18_DSNT(nn.Module): 
+    def __init__(self,num_classes=200):
+        super().__init__()
+        self.model_name='resnet18'
+        resnet = models.resnet18()
+        modules = list(resnet.children())[:-2] #Removing the last two layers (up until before the Pooling)
+        self.model = nn.Sequential(*modules)
+        self.hm_conv = nn.Conv2d(512, num_classes, kernel_size=1, bias=False)
+        # self.gap = nn.AdaptiveAvgPool2d(1) #Pooling down
+        # self.fc = nn.Linear(512, num_classes) #Last linear layer 
+
+    def forward(self, x, heatmap = False):
+        x = self.model(x)
+        unnormalized_heatmaps = self.hm_conv(x)
+        heatmaps = subpix.spatial_softmax2d(unnormalized_heatmaps)
+        coords = subpix.spatial_expectation2d(heatmaps, normalized_coordinates=False)
+        if heatmap:
+            return  heatmap, coords
+        return coords
 
 class SolarPanelDetector(nn.Module):
     def __init__(self):
@@ -203,7 +224,7 @@ def train_model(network, criterion, optimizer, num_epochs, train_loader, valid_l
             # find the loss for the current step
             # print(predictions.shape)
             # print(centroids.shape)
-            centroids = centroids.view(4,-1)
+            # centroids = centroids.view(4,-1)
             # print(centroids.shape)
             loss_train_step = criterion(predictions, centroids)
 
@@ -384,3 +405,21 @@ def plot_CAM(model, test_loader, num_tests):
         ax[1].set_title("Reality")
 
         plt.show()
+
+def plot_losses(train_loss, val_loss):
+    """Plot the training and validation loss.
+        - train_loss: np.array
+        - val_loss: np.array
+    """
+    fig, ax = plt.subplots(2, 1, figsize=(8, 8))
+
+    x1 = np.arange(len(train_loss))
+    x2 = np.arange(len(val_loss))
+
+    ax[0].plot(x1, train_loss)
+    ax[0].set_title("Training loss")
+
+    ax[1].plot(x2, val_loss)
+    ax[1].set_title("Validation loss")
+
+    plt.show()
