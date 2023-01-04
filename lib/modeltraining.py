@@ -263,8 +263,9 @@ def train_model(network, criterion, optimizer, num_epochs, train_loader, valid_l
             # find the loss for the current step
             # print(predictions.shape)
             # print(centroids.shape)
-            centroids = centroids.view(4,-1)
+            centroids = centroids.view(centroids.size(0),-1)
             # print(centroids.shape)
+            # try:
             loss_train_step = criterion(predictions, centroids)
 
             # calculate the gradients
